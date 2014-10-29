@@ -1,0 +1,19 @@
+# mand config
+mandconfig
+trunktarget $CADDR $CPORT1 n=myPbx b=1
+
+# sipp config
+sippconfig 1024 1028
+
+
+# --------------------------------------------------------------------------------------------
+# 1.1 UAC REQUIRE
+# --------------------------------------------------------------------------------------------
+
+# Start UAS on the configured sip proxy address
+sipp -i $SADDR -p $SPORT1 -sf uas_prack.sf
+
+# Start UAC 
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf \
+         uac_prack_require.sf
+

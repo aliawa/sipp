@@ -1,0 +1,243 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE scenario SYSTEM "sipp.dtd">
+
+<scenario name="UAS handling ACK timeout">
+	
+   <recv request="INVITE" crlf="true" rrs="true" >
+     <action>
+         <ereg regexp="sip:[[:alnum:]]*@[0-9.]*(:[0-9]*)?" 
+             search_in="hdr" header="From:" assign_to="1" />
+         <ereg regexp="sip:[[:alnum:]]*@[0-9.]*(:[0-9]*)?" 
+             search_in="hdr" header="To:" assign_to="2" />
+         <ereg regexp="sip:[[:alnum:]]*@([0-9.]*(:[0-9]*)?)" 
+             search_in="msg" assign_to="4,5" />
+		 <ereg regexp="tag=.*" search_in="hdr" header="From:" assign_to="3" />
+        
+         <!-- save call-id and cseq for 487 after cancel -->
+         <ereg regexp=".*" search_in="hdr" header="Call-ID:"  assign_to="inv_cid"/>
+         <ereg regexp=".*" search_in="hdr" header="CSeq:" assign_to="inv_cseq"/>
+
+         <ereg regexp="100" search_in="hdr" header="Subject:" assign_to="found" />
+         <strcmp assign_to="res" variable="found" value="100"/>
+         <test assign_to="snd100" variable="res" compare="equal" value="0"/>
+         
+         <ereg regexp="180" search_in="hdr" header="Subject:" assign_to="found" />
+         <strcmp assign_to="res" variable="found" value="180"/>
+         <test assign_to="snd180" variable="res" compare="equal" value="0"/>
+         
+         <ereg regexp="183" search_in="hdr" header="Subject:" assign_to="found" />
+         <strcmp assign_to="res" variable="found" value="183"/>
+         <test assign_to="snd183" variable="res" compare="equal" value="0"/>
+         
+         <ereg regexp="200" search_in="hdr" header="Subject:" assign_to="found" />
+         <strcmp assign_to="res" variable="found" value="200"/>
+         <test assign_to="snd200" variable="res" compare="equal" value="0"/>
+         
+         <ereg regexp="uas_bye" search_in="hdr" header="Subject:" assign_to="found" />
+         <strcmp assign_to="res" variable="found" value="uas_bye"/>
+         <test assign_to="sndBye" variable="res" compare="equal" value="0"/>
+         
+         <ereg regexp="can" search_in="hdr" header="Subject:" assign_to="found" />
+         <strcmp assign_to="res" variable="found" value="can"/>
+         <test assign_to="rcvCancel" variable="res" compare="equal" value="0"/>
+         
+         <log message="snd100=[$snd100]
+             snd180=[$snd180],
+             snd183=[$snd183],
+             snd200=[$snd200],
+             sndBye=[$sndBye],
+             rcvCancel=[$rcvCancel]"
+             />
+
+     </action>
+   </recv>
+
+   <Reference variables="4"/>
+
+
+   <send condexec="snd100" test="rcvCancel" next="1">
+    <![CDATA[
+
+      SIP/2.0 100 Trying
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]SIPpTag01[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+
+   <send condexec="snd180" >
+    <![CDATA[
+
+      SIP/2.0 180 Ringing
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]SIPpTag01[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+
+
+   <send condexec="snd183" >
+    <![CDATA[
+
+      SIP/2.0 183 Progress
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]SIPpTag01[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Type: application/sdp
+      Content-Length: [len]
+
+      v=0
+      o=user1 53655765 2353687637 IN IP[local_ip_type] [local_ip]
+      s=-
+      c=IN IP[media_ip_type] [media_ip]
+      t=0 0
+      m=audio [media_port] RTP/AVP 0
+      a=rtpmap:0 PCMU/8000
+
+    ]]>
+  </send>
+
+  <send condexec="snd200" retrans="500" ontimeout="3" next="2">
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]SIPpTag01[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Type: application/sdp
+      Content-Length: [len]
+
+      v=0
+      o=user1 53655765 2353687637 IN IP[local_ip_type] [local_ip]
+      s=-
+      c=IN IP[media_ip_type] [media_ip]
+      t=0 0
+      m=audio [media_port] RTP/AVP 0
+      a=rtpmap:0 PCMU/8000
+
+    ]]>
+  </send>
+  
+  
+  
+  <!-- RECEIVED A CANCEL -->
+  <label id="1"/>
+  
+  <recv request="CANCEL"
+	  crlf="true" >
+  </recv>
+  
+  <send crlf="true" condexec="rcvCancel">
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Length: 0
+
+    ]]>
+  </send>
+  
+  <send retrans="500" crlf="true" condexec="rcvCancel">
+    <![CDATA[
+
+      SIP/2.0 487 Request Terminated
+      [last_Via:]
+      [last_From:]
+      [last_To:]
+      Call-ID:[$inv_cid]
+      CSeq: [$inv_cseq]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+
+
+  
+  
+  <!-- NORMAL OPERATION -->
+  <label id="2" />
+
+  <recv request="ACK"
+	  optional="true"
+      crlf="true"
+      test="sndBye"
+      next="3">
+  </recv>
+  
+  
+
+  <!-- RECCIVE A BYE -->
+  <recv 
+      request="BYE">
+  </recv>
+
+  <send next="19" crlf="true" >
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+
+  <!-- SEND A BYE -->
+  <label id="3"/>
+
+  <send retrans="500" >
+    <![CDATA[
+
+      BYE [$1] SIP/2.0
+      Via: SIP/2.0/UDP [$5];branch=z9hG4bk-[pid][call_number]
+      From: <[$2]>;tag=[pid]SIPpTag01[call_number] 
+      To: <[$1]>;[$3]
+      [last_Call-ID:]
+      CSeq: 2 BYE
+      Max-Forwards: 70
+      Subject: Performance Test
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <recv response="200" crlf="true">
+  </recv>
+
+
+  <!-- END --> 
+  <label id="19"/>
+  
+
+</scenario>
+

@@ -1,0 +1,229 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE scenario SYSTEM "sipp.dtd">
+
+<scenario name="Registrar">
+
+  <label id="1"/>
+
+  <recv request="REGISTER">
+  </recv>
+
+  <!-- 2=200 Ok 
+       3=400 Bad Request
+       4=423 Interval Too Brief
+       5=423 Interval Too Brief (Without Min-Expires)
+       6=503 Service Unavailable (With Retry-After)
+       7=503 Service Unavailable (Without Retry-After)
+       8=600 Busy Everywhere
+       9=100 Trying
+       10=401 Unauthorized
+       11=404 Not Found
+       12=Timeout
+   -->
+  <!-- Adjust this to get the appropriate response -->
+  <nop hide="true" next="4"/>
+
+
+  <!-- 200 OK -->
+  <label id="2"/>
+  <send>
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Length: 0
+      Expires: 10
+
+    ]]>
+  </send>
+  <nop hide="true" next="1"/>
+  
+
+
+  <!-- 400 Bad Request -->
+  <label id="3"/>
+  <send>
+    <![CDATA[
+
+      SIP/2.0 400 Bad Request
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+  <nop hide="true" next="1"/>
+
+  
+
+
+  <!-- 423 Interval Too Brief -->
+  <label id="4"/>
+  <send>
+    <![CDATA[
+
+      SIP/2.0 423 Interval Too Brief
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+      Min-Expires: 20
+
+    ]]>
+  </send>
+  <nop hide="true" next="1"/>
+  
+
+
+  <!-- 423 Interval Too Brief (without Min-Expires header)-->
+  <label id="5"/>
+  <send>
+    <![CDATA[
+
+      SIP/2.0 423 Interval Too Brief
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+  <nop hide="true" next="1"/>
+  
+
+
+  <!-- 503 Service Unavailable (With Retry-After)-->
+  <label id="6"/>
+  <send>
+    <![CDATA[
+
+      SIP/2.0 503 Service Unavailable
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+      Retry-After: 21
+
+    ]]>
+  </send>
+  <nop hide="true" next="1"/>
+  
+
+
+  <!-- 503 Service Unavailable (Without Retry-After)-->
+  <label id="7"/>
+  <send>
+    <![CDATA[
+
+      SIP/2.0 503 Service Unavailable
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+  <nop hide="true" next="1"/>
+  
+
+
+  <!-- 600 Busy Everywhere -->
+  <label id="8"/>
+  <send>
+    <![CDATA[
+
+      SIP/2.0 600 Busy Everywhere
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+  <nop hide="true" next="1"/>
+  
+
+
+  <!-- 100 Trying -->
+  <label id="9"/>
+  <send>
+    <![CDATA[
+
+      SIP/2.0 100 Trying
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+  <nop hide="true" next="1"/>
+  
+
+
+  <!-- 401 Unauthorized -->
+  <label id="10"/>
+  <send>
+    <![CDATA[
+
+      SIP/2.0 401 Unauthorized
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      WWW-Authenticate: Digest realm="Registered_Subscribers",domain="sip:206.229.26.61",nonce="79bbc2fee6b20cd2e834ce80a18919db",opaque="da82304f",stale=FALSE,algorithm=MD5
+      Content-Length: 0
+
+    ]]>
+  </send>
+  <nop hide="true" next="1"/>
+
+
+
+  <!-- 404 Not Found --> 
+  <label id="11"/>
+  <send>
+    <![CDATA[
+
+      SIP/2.0 404 Not Found
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+  <nop hide="true" next="1"/>
+
+
+
+  <!-- Timeout -->
+  <label id="12"/>
+  <pause milliseconds="2"/>
+  <nop hide="true" next="1"/>
+  
+
+</scenario>

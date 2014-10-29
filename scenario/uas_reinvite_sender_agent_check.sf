@@ -1,0 +1,179 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE scenario SYSTEM "sipp.dtd">
+
+
+<scenario name="UAS RE-INVITE">
+
+    <!-- Variables: -->
+    <!-- 2: remote tag -->
+    <!-- 3: Contact URI -->   
+
+    <!-- Fields: -->
+    <!-- field0: the original caller -->
+    <!-- field1: the called number -->
+    <!-- field2: the new ip address for media, should be different from the origianl 
+                 media-ip, because this is the purpose of the re-INVITE -->
+                 
+  <recv request="INVITE" next="2" test="1">
+    <action>
+      <!-- Make sure the invite came from B2BUA -->
+      <ereg regexp="ewb2bua" search_in="hdr" header="User-Agent:" assign_to="1"/>
+      <ereg regexp="sip:.*([0-9]{1,3}\.){3}[0-9]{1,3}(:[0-9]*)?" search_in="hdr" 
+        header="Contact:" assign_to="contHdr" />
+      <ereg regexp=".*" search_in="hdr" header="From:" assign_to="fromHdr" />
+    </action>
+  </recv>
+
+  
+  <!-- If the user-agent is not B2BUA we land here -->
+  <send>
+    <![CDATA[
+
+      SIP/2.0 403 Forbidden
+      [last_Via:]
+      [last_From:]
+      [last_To:]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <recv crlf="true" request="ACK" next="19"/>
+
+
+
+  <!-- Jump here if the User agnet check in INVITE is successful -->
+  <label id="2"/>
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 180 Ringing
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]-sipp-01
+      [last_Call-ID:]
+      [last_CSeq:]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <send retrans="500">
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]-sipp-01
+      [last_Call-ID:]
+      [last_CSeq:]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Type: application/sdp
+      Content-Length: [len]
+
+      v=0
+      o=user1 53655765 2353687637 IN IP[local_ip_type] [local_ip]
+      s=-
+      c=IN IP[media_ip_type] [media_ip]
+      t=0 0
+      m=audio [media_port] RTP/AVP 0
+      a=rtpmap:0 PCMU/8000
+
+    ]]>
+  </send>
+
+  <recv request="ACK" rtd="true" crlf="true">
+    <action>
+      <ereg regexp=".*sip:([[:alnum:]]*).*" search_in="hdr" header="To:" assign_to="toHdr,toUsr" />
+    </action>
+  </recv>
+
+
+  <pause milliseconds="500" crlf="true"/>
+
+  <!-- The reinvite starts here -->
+
+  <send retrans="500">
+    <![CDATA[
+
+      INVITE [$contHdr] SIP/2.0
+      Via: SIP/2.0/[transport] [local_ip]:[local_port];branch=[branch]
+      From:[$toHdr]
+      To:  [$fromHdr]
+      Call-ID: [call_id]
+      CSeq: 1 INVITE
+      Contact: sip:[$toUsr]@[local_ip]:[local_port]
+      Max-Forwards: 70
+      Subject: Performance Test
+      Content-Type: application/sdp
+      Content-Length: [len]
+
+      v=0
+      o=user1 53655765 2353687637 IN IP[local_ip_type] [local_ip]
+      s=-
+      c=IN IP[media_ip_type] [local_ip]
+      t=0 0
+      m=audio [media_port] RTP/AVP 0
+      a=rtpmap:0 PCMU/8000
+
+    ]]>
+  </send>
+
+  <recv response="100" optional="true">
+  </recv>
+
+  <recv response="180" optional="true">
+  </recv>
+
+  <recv response="183" optional="true">
+  </recv>
+
+  <recv response="200" rtd="true">
+  </recv>
+
+  <send crlf="true">
+    <![CDATA[
+
+      ACK sip:[$contHdr] SIP/2.0
+      Via: SIP/2.0/[transport] [local_ip]:[local_port];branch=[branch]
+      From:[$toHdr]
+      To:[$fromHdr]
+      Call-ID: [call_id]
+      CSeq: 1 ACK
+      Contact: sip:[$toUsr]@[local_ip]:[local_port]
+      Max-Forwards: 70
+      Subject: Performance Test
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+
+
+  <recv request="BYE">
+  </recv>
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Length: 0
+
+    ]]>
+  </send>
+  <pause/>
+
+  <label id="19"/>
+
+</scenario>
+

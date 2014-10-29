@@ -1,0 +1,233 @@
+
+# --------------------------------------------------------------------------------------------
+# REDIRECT TRUNKING RULE
+# Redirecting to target on WAN interface
+# --------------------------------------------------------------------------------------------
+
+# Mand configuration
+mandconfig
+# target on S interface. Not using b2bua
+trunktarget $SADDR $SPORT2 n=mytarget
+addrule io=2 p=0 d=0 s=0 b=0 r=1028 
+mandclient 1024
+
+#sipp config
+sippconfig 1024 1028
+
+# uas on different port than the sip-proxy(SADDR:SPORT1)
+../sipp -i $SADDR -p $SPORT2 -sf uas.sf
+
+# uac
+../sipp -i $CADDR  -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+
+
+#--------------------------------------------------------------------------------------------
+# REDIRECT TRUNKING RULE NEW
+# Redirecting to target on LAN interface
+#--------------------------------------------------------------------------------------------
+
+# Mand configuration
+mandconfig
+trunktarget $EM_LAN $CPORT2 n=sipp 
+addrule io=2 p=0 d=0 s=0 b=0 r=1028 a=408
+mandclient 1024
+
+#sipp config
+sippconfig 1024 1028
+
+# uas on EM_LAN (where mand is running) 
+../sipp -i $EM_LAN -p $CPORT2 -sf uas.sf
+
+# uac
+../sipp -i $CADDR  -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+
+
+
+# --------------------------------------------------------------------------------------------
+# REDIRECT TRUNKING RULE AND RETRANSMISSIONS
+# check that the redirect rule is also applied to the retranmitted invite
+# --------------------------------------------------------------------------------------------
+
+# Mand configuration
+mandconfig
+# Use redirect rule for target on S interface
+trunktarget $SADDR $SPORT2 n=tt
+addrule io=2 p=0 d=0 s=0 b=0 r=1028 
+
+# uas chain
+invite_retransmit_check.sh
+
+#uac
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+
+
+
+#--------------------------------------------------------------------------------------------
+# OUTBOUND DIGIT MANIPULATION
+#--------------------------------------------------------------------------------------------
+ 
+# Mand configuration
+mandconfig
+trunktarget $CADDR $CPORT1 n=sipp 
+addrule io=1 p=1 d=0 a=1024 s=9 r=_ANONYMOUS
+
+sippconfig ANONYMOUS 1028
+
+# UAS 
+# The call succeeds only when the from username is 1024
+# fails otherwise
+../sipp -i $SADDR -p $SPORT1 -sf uas_didcheck.sf
+
+# UAC
+../sipp -i $CADDR  -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+
+
+#--------------------------------------------------------------------------------------------
+# OUTBOUND DIGIT MANIPULATION FOR REGISTERED CLIENTS
+#--------------------------------------------------------------------------------------------
+ 
+# Mand configuration
+mandconfig
+mandclient 4083517232 $CPORT1
+export TARGET_ID=0
+addrule io=1 p=0 d=0 a=2143291629 s=10 r=866NXXXXXX
+
+
+sippconfig  4083517232 8663461168 
+
+# UAS 
+../sipp -i $SADDR -p $SPORT1 -sf uas.sf
+
+# UAC
+../sipp -i $CADDR  -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+
+
+
+
+#--------------------------------------------------------------------------------------------
+# INBOUND DIGIT MANIPULATION
+#--------------------------------------------------------------------------------------------
+
+# Change the called number to 1028
+ 
+
+# Mand configuration
+mandconfig
+trunktarget $CADDR $CPORT1 n=sipp 
+addrule io=0 p=0 d=0 a=1028 s=4 r=9999
+
+sippconfig 1024 9999
+
+# UAS 
+../sipp -i $CADDR -p $CPORT1 -sf uas.sf
+
+# UAC
+../sipp -i $SADDR  -p $SPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_WAN -sf uac.sf
+
+
+
+
+#--------------------------------------------------------------------------------------------
+# INBOUND DIGIT MANIPULATION for FXS with multiple PORTS
+#--------------------------------------------------------------------------------------------
+
+# Mand configuration
+mandconfig
+export TARGET_ID=1
+addrule io=0 p=0 d=0 a=408 s=0 r=5692012
+sipuaconf $CADDR off 4085692011 4085692012
+
+# sipp config
+sippconfig 1024 5692012
+
+
+# UAS 
+../sipp -i $CADDR -p $EWUA_SIPPORT -sf uas.sf
+
+# UAC
+../sipp -i $SADDR  -p $SPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_WAN -sf uac.sf
+
+
+
+#--------------------------------------------------------------------------------------------
+# INBOUND DIGIT MANIPULATION for FXS with multiple PORTS that register
+#--------------------------------------------------------------------------------------------
+
+# Mand configuration
+mandconfig
+export TARGET_ID=1
+addrule io=0 p=0 d=0 a=408 s=0 r=5692012
+sipuaconf $CADDR on 4085692011 4085692012
+
+# sipp config
+sippconfig 1024 5692012
+
+# Register 4085692011 and 4085692012 see tests_general.REGISTER
+
+# UAS 
+../sipp -i $CADDR -p $EWUA_SIPPORT -sf uas.sf
+
+# UAC
+../sipp -i $SADDR  -p $SPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_WAN -sf uac.sf
+
+
+# -------------------------------------------------------------------------------------------i
+# DEFAULT TRUNK RULE
+# --------------------------------------------------------------------------------------------
+# A WAN invite matches the default rule and is 
+# directed to the LAN trunking device
+#
+
+# Mand configuration
+mandconfig
+trunktarget $CADDR $CPORT2 n=tt
+addrule io=0 p=0 d=1 s=0 b=0 # default rule 
+
+
+# UAS 
+../sipp -i $CADDR -p $CPORT2 -sf uas.sf
+
+# UAC
+../sipp -i $SADDR -p $SPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+
+
+
+
+
+# -------------------------------------------------------------------------------------------i
+# CLIENTS JOINING A TARGET 
+# --------------------------------------------------------------------------------------------
+
+# Mand config
+mandconfig
+trunktarget $CADDR $CPORT1 n=mytarget 
+addrule io=1 p=0 d=0 s=1 b=0 r=. a=408
+
+#sipp config
+sippconfig 1024 1028
+
+# Step 1: configure sipp register client
+../scripts/set_uac_register 1024 pa55 $CPORT1 3600
+../scripts/set_uas_register pa55
+
+# registrar
+../sipp -i $SADDR -p $SPORT1 -inf data_registrar.csv -sf uas_register.sf
+
+# register uac
+../sipp_ssl -i $CADDR -p $CPORT1 -m 1 -inf data_reg.csv $EM_LAN -sf uac_register.sf
+
+
+#uas 
+../sipp -i $SADDR -p $SPORT1 -sf uas.sf
+
+#uac
+../sipp -i $CADDR  -p $CPORT2 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+
+

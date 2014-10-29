@@ -1,0 +1,20 @@
+#!/bin/bash
+
+#
+# removes all log files
+#
+
+count=`ls --format=single-column *.log 2>/dev/null | wc -l`
+if [ $count -eq 0 ]
+then
+    echo "No log files"
+    echo
+else
+    echo "Deleting $count files"
+    echo
+    ls --format=single-column *.log 
+    rm -f *.log
+    echo
+fi
+
+

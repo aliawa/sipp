@@ -1,0 +1,731 @@
+# --------------------------------------------------------------------------------------------
+# OUTBOUND CALL
+# --------------------------------------------------------------------------------------------
+
+# Mand configuration 
+mandconfig
+mandclient 1024 $CPORT1
+
+#sipp config
+sippconfig 1024 1028
+
+# Start UAS on the configured sip proxy address
+../sipp -i $SADDR -p $SPORT1 -sf uas.sf
+
+# Start UAC 
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+# video
+uac_video.sf
+uas_video.sh
+
+# with prack
+uas_prack.sf
+uac_prack.sf
+
+
+
+# --------------------------------------------------------------------------------------------
+# INBOUND CALL 
+# --------------------------------------------------------------------------------------------
+
+# Send call to a client
+mandconfig
+mandclient 1024 $CPORT1
+
+# Send call to a trunking device
+mandconfig
+trunktarget $CADDR $CPORT1 n=sipp
+addrule io=0 d=1 
+
+
+
+#sipp config
+sippconfig 1028 1024 
+
+# UAS
+../sipp -i $CADDR -p $CPORT1 -sf uas.sf
+
+# UAC 
+../sipp -i $SADDR -p $SPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_WAN -sf uac.sf
+
+
+
+
+# --------------------------------------------------------------------------------------------
+# OUTBOUND CALL (OUTBOUND PROXY / TRANSPARENT MODE)
+# --------------------------------------------------------------------------------------------
+
+# Mand configuration transparent mode on box
+# 1. Sip Proxy set to  $PROXY2_ADDR $PROXY2_PORT
+# 2. echo "* 3456 0 io=1 p=0 d=0 s=0 b=1 r=." > sipdprules
+# 3. Enable Transparent proxy mode
+# 4. Configure SIPP as below
+
+
+# Mand configuration transparent mode on PC
+mandconfig $PROXY2_ADDR $PROXY2_PORT
+mandclient 1024 $CPORT1
+setvalue alg_defs.conf SIP_TRANSPARENT on
+
+
+# Mand configuration (OBP)
+mandconfig 
+mandclient 1024 $CPORT1
+
+
+# Mand configuration unknown proxy (OBP)
+mandconfig $PROXY2_ADDR
+export TARGET_ID=0 # apply rule to all clients
+addrule io=1 p=0 d=0 s=0 b=1 r=. 
+mandclient 1024 $CPORT1
+setvalue alg_defs.conf SIP_USE_ALLOWED_PROXIES on
+
+
+# sipp config (for OBP)
+sippconfig 1024 1028 $SADDR $SPORT1
+
+# sipp config (for Transparent mode)
+# NOTE: For transparent mode the PROXY2_ADDR should not be on the 
+# same machine as the uac, because then the messages will just 
+# go to loopback interface
+# NOTE: Transparent mode cannot be done with HOST_DEBUG build, because the 
+# host PC does not pick up the messages that are not destined
+# for it.
+sippconfig 1024 1028 $PROXY2_ADDR $PROXY2_PORT
+sudo route add -host $PROXY2_ADDR gw $EM_LAN
+sudo route del -host $PROXY2_ADDR
+
+
+
+# UAS 
+../sipp -i $PROXY2_ADDR -p $PROXY2_PORT -sf uas.sf
+
+# UAC OBP mode
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac_transparent.sf
+
+# UAC Transparent mode
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $PROXY2_ADDR:$PROXY2_PORT -sf uac_transparent.sf
+
+
+#--------------------------------------------------------------------------------------------
+# INBOUND CALL TO FXS PORTS 
+#--------------------------------------------------------------------------------------------
+ 
+# Mand configuration
+mandconfig
+sipuaconf 1024 1025
+
+
+# Mand configuration Unknown proxy
+mandconfig $PROXY2
+sipuaconf 1024 1025
+setvalue alg_defs.conf SIP_USE_INBOUND_PROXIES on
+
+#sipp config
+sippconfig 1028 1024
+
+# register uac (optional)
+../scripts/set_uac_register 1024 pa55 $CPORT1 
+../scripts/set_uas_register pa55
+
+# registrar
+../sipp -i $SADDR -p $SPORT1 -inf data_registrar.csv -sf uas_register.sf
+# register uac
+../sipp_ssl -i $CADDR -p $CPORT1 -m 1 -inf data_reg.csv $EM_LAN -sf uac_register.sf
+
+
+#uas on CADDR
+../sipp -i $CADDR -p $EWUA_SIPPORT -sf uas.sf
+
+#uac
+../sipp -i $SADDR  -p $SPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_WAN -sf uac.sf
+
+
+
+# --------------------------------------------------------------------------------------------
+# CLIENTS REGISTRING
+# --------------------------------------------------------------------------------------------
+
+# Mand configuration
+mandconfig
+
+#sipp config
+../scripts/set_uac_register 1024 pa55 $CPORT1 
+../scripts/set_uas_register pa55 600
+
+#sipp config multi-phone registration
+#for example: register 500 phones starting DID:1025
+echo "SEQUENTIAL,PRINTF=500,PRINTFOFFSET=25" > data_reg.csv
+echo "10%d;[authentication username=10%d password=10%d];5100;3600" >> data_req.csv
+
+
+# transparent register
+echo "SEQUENTIAL" > data_reg.csv
+echo "1024;[authentication username=1024 password=pa55];$PROXY2_ADDR" >> data_reg.csv
+
+# UAS
+sipp -i $SADDR -p $SPORT1 -inf data_registrar.csv -sf uas_register.sf
+
+# UAC
+sipp_ssl -i  $CADDR -p $CPORT1 -m 1 -inf data_reg.csv  $EM_LAN -sf uac_register.sf
+
+# UAC Transparent
+../sipp_ssl -i  $CADDR -p $CPORT1 -m 1 -inf data_reg.csv \
+        $PROXY2_ADDR:$PROXY2_PORT -sf uac_register_transparent.sf
+
+
+
+# --------------------------------------------------------------------------------------------
+# CANCEL TEST
+# --------------------------------------------------------------------------------------------
+
+# Mand configuration
+mandconfig
+mandclient 1024 $CPORT1
+
+#sipp config
+sippconfig 1024 1028
+
+# Start the UAS that is expecting a CANCEL 
+../sipp -i $SADDR -p $SPORT1 -sf uas_cancel.sf
+
+
+# Start UAC. This UAC will send an INVITE and then cancel it. 
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac_cancel.sf
+
+
+
+# UAS does not send 487
+-TODO-
+
+
+# --------------------------------------------------------------------------------------------
+# RE-INVITE
+# Outbound call. Re-Invite from called-party on WAN
+# --------------------------------------------------------------------------------------------
+
+# Mand configuration 
+mandconfig
+mandclient 1024 $CPORT1
+
+
+# The CADDR (field2) is used in SDP of reinvite only 
+echo -e "SEQUENTIAL\n1024;1028;$CADDR" > data_call.csv
+../sipp -i $SADDR -p $SPORT1 -inf data_call.csv $EM_WAN -sf uas_reinvite_sender.sf
+
+# uac
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv $EM_LAN -sf uac_reinvite_receiver.sf
+
+
+
+
+
+
+
+# --------------------------------------------------------------------------------------------
+# INVITE CHALLENGE
+# --------------------------------------------------------------------------------------------
+
+# Mand configuration
+mandconfig
+mandclient 1024 $CPORT1 
+
+
+# start uas. deadcall option needed for sipp 3.1 not for 2.0.1
+../sipp -i $SADDR -p $SPORT1 -sf uas_invite_challenge_alg.sf
+
+
+# uac for pass through challenge
+sippconfig 1024 1028 "[authentication username=1023 password=1023]"
+../sipp_ssl -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv $EM_LAN -sf uac_invite_challenge.sf
+
+
+ 
+
+# --------------------------------------------------------------------------------------------
+# ACK Timeouts
+# --------------------------------------------------------------------------------------------
+
+# Mand Configuration
+mandconfig
+mandclient 1024 $CPORT1
+
+# Caller does not send an ACK. We also don't send an ACK to tha callee. The
+# callee retranmitts OK until it times out and sends a BYE.
+
+1. Start UAS
+   ../sipp -i $SADDR -p $SPORT1 -sf uas_missing_ack.sf
+
+2. Start the UAC.  
+   ../sipp -i $CADDR -p $CPORT1 -m 1 -inf data_call.csv  $EM_LAN -sf uac_no_ack.sf
+
+
+# Caller does not send an ACK. We also don't send an ACK to tha callee.
+# Eventually UAServerCore times out and we send BYE to both caller and callee.
+
+3. Start UAS 
+   ../sipp -i $SADDR -p $SPORT1 -sf uas_missing_ack_no_bye.sf
+
+4. Start the UAC. Same as 2 above
+
+# We send an ACK but it gets lost and the callee resends the 200 OK
+# So we resend the ACK
+
+5. UAS
+   ../sipp -i $SADDR -p $SPORT1 -sf uas_ack_loss_simulation.sf
+
+6. UAC
+   ../sipp -i $CADDR -d 5000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+
+
+
+
+
+
+
+# --------------------------------------------------------------------------------------------
+# UAC BYE TIMEOUT
+# --------------------------------------------------------------------------------------------
+# If no OK response to BYE. We retransmitt the BYE request
+# This is an outbound call so same settings apply
+
+# UAS. using -nd (no default) option
+   ../sipp -i $SADDR -p $SPORT1 -nd -sf uas_no_ok_to_bye.sf
+
+
+# UAC.
+   ../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv $EM_LAN -sf uac.sf
+
+
+
+
+# --------------------------------------------------------------------------------------------
+# REFER TEST
+# --------------------------------------------------------------------------------------------
+
+# UAS
+../sipp  -i $SADDR -p $SPORT1  -sf uas_refer.sf
+
+# UAC
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv $EM_LAN -sf uac_refer.sf
+
+
+
+
+
+
+# -------------------------------------------------------------------------------------------i
+# AVAILABILITY
+# --------------------------------------------------------------------------------------------
+
+# Mand config
+mandconfig
+mandclient 1024
+setvalue local_defs.conf LOCAL_MODE AUTO
+
+# UAC
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv $EM_LAN -sf single_invite.sf
+
+
+
+
+# -------------------------------------------------------------------------------------------i
+# REGISTER
+# --------------------------------------------------------------------------------------------
+
+mandconfig
+
+
+# sipp
+USR=240888;PAS='simple9!';EXP=3600
+../scripts/set_uac_register $USR $PAS $CPORT1 $EXP
+../scripts/set_uas_register $PAS $EXP
+
+
+# UAS with challenge
+../sipp_ssl -i $SADDR -p $SPORT1 -inf data_registrar.csv -sf uas_register_challenge.sf
+
+# UAS no challenge
+../sipp -i $SADDR -p $SPORT1 -inf data_registrar.csv -sf uas_register.sf
+
+# UAC
+../sipp_ssl -i $CADDR  -p $CPORT1 -m 1 -inf data_reg.csv -nd $EM_LAN -sf uac_register.sf
+
+
+
+
+# -------------------------------------------------------------------------------------------i
+# INVITE timeout and changed branch-id but same call-id for new INVITE
+# --------------------------------------------------------------------------------------------
+
+
+# UAS
+  none
+# UAC
+  ../sipp -i $CADDR -p $CPORT1  -m 1 -inf data_call.csv  $EM_LAN -sf uac_change_branch.sf
+
+
+
+
+# -------------------------------------------------------------------------------------------i
+# Simulating lost ACK but then a re-INVITE is sent 
+# --------------------------------------------------------------------------------------------
+
+# UAS
+    ../sipp -i $SADDR -p $SPORT1 -sf uas_reinvite_receiver.sf
+# UAC
+    ../sipp -i $CADDR -p $CPORT1  -m 1 -inf data_call.csv  $EM_LAN -sf uac_reinvite_sender_lost_ACK.sf
+
+
+# -------------------------------------------------------------------------------------------i
+#  SURVIVABILITY
+#  Switch to local mode and make a local mode call
+#  Switch back to remote mode
+#  Send BYE (Note: BYE is handled when mand has switched back to remote mode)
+# --------------------------------------------------------------------------------------------
+
+sippconfig 1024 1028 
+
+mandconfig
+mandclient 1024 $CPORT1
+
+setvalue local_defs.conf LOCAL_MODE AUTO
+setvalue local_defs.conf NUM_RECVD 5
+
+
+# UAS remote
+  ../sipp -i $SADDR -p $SPORT1 -d 6500 -deadcall_wait 0 -sf uas_force_localmode.sf
+# UAS local (on the same machine as mand)
+  ../sipp -i $EM_LAN  -p 6050  -sf uas.sf
+# UAC
+  ../sipp -i $CADDR -p $CPORT1  -m 1 -d 20000 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+
+
+
+# -------------------------------------------------------------------------------------------i
+#  SURVIVABILITY
+#  Multihome Outbound Proxy Mode in Local Mode
+# --------------------------------------------------------------------------------------------
+
+sippconfig 1024 1028 
+
+mandconfig
+mandclient 1024
+setvalue local_defs.conf LOCAL_MODE AUTO
+setvalue local_defs.conf NUM_RECVD 5
+setvalue alg_defs.conf SIP_MULTIHOME on
+
+# UAS remote
+  None.
+# UAC for sending mand to local mode
+  ../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv $EM_LAN -sf uac_single_invite.sf
+# UAC
+  ../sipp -i $CADDR -p $CPORT1  -m 1 -inf data_call.csv  $EM_LAN -sf uac_single_invite_mhop.sf
+
+
+
+
+# --------------------------------------------------------------------------------------------
+# RTP 
+# --------------------------------------------------------------------------------------------
+
+mandconfig
+mandclient 1024 5080
+
+sippconfig 1024 1028
+
+# UAS
+../sipp -i $SADDR -p $SPORT1 -rtp_echo -sf uas.sf 
+# UAC
+sudo ../sipp_play -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac_pcap_play.sf
+
+
+#--------------------------------------------------------------------------------------------
+# SURVIVABILITY UNIT and STRESS TEST
+#--------------------------------------------------------------------------------------------
+
+# configure periodic_reg.sh
+echo "SEQUENTIAL,PRINTF=250,PRINTFOFFSET=24" > data_reg.csv
+echo "10%d;[authentication username=10%d password=10%d];50%d;3600" >> data_reg.csv
+
+# configure uac localmode
+sippconfig 1024 1028
+
+
+# UAS
+../sipp -i $SADDR -p $SPORT1 -sf uas_force_localmode.sf -deadcall_wait 0
+
+# UAS Local mode
+../sipp -i $CADDR -p 5028 -sf uas_localmode.sf
+
+# UAC Register
+../scripts/periodic_reg.sh
+
+# UAC Local mode (wait for phones to register)
+../sipp -i $CADDR -p 5024 -d 2500  -inf data_call.csv  $EM_LAN -sf uac_localmode.sf -r 1 -rp 13000 -m 46
+
+
+
+#--------------------------------------------------------------------------------------------
+# TRUNKING GROUPS 
+#--------------------------------------------------------------------------------------------
+
+# mand config ALG trunking devices
+mandconfig
+trunktarget $CADDR  $CPORT1 n=algTD1 gid=10001 p=\{ii:15,mi:180,fu:1022,tu:1033\}
+trunktarget $CADDR2 $CPORT1 n=algTD2 gid=10001 p=\{ii:15,mi:180,fu:1022,tu:1033\}
+addrule io=0 p=0 d=0 s=0 r=.
+echo "* 10001 n=myRG1" > siprouting.conf
+
+# mand config B2BUA trunking devices
+mandconfig
+TGT_ID1=`trunktarget $CADDR  $CPORT1 b=1 n=b2buaTD1 gid=10001 p=\{ii:15,mi:180,fu:1022,tu:1033\}`
+TGT_ID2=`trunktarget $CADDR2 $CPORT1 b=1 n=b2buaTD2 gid=10001 p=\{ii:15,mi:180,fu:1022,tu:1033\}`
+TARGET_ID=0;addrule io=4 p=0 d=0 s=0 r=. b=2001
+echo "* 10001 n=myRG1" > siprouting.conf
+echo "* 12001 nm=sendRule tgt=$TGT_ID1" > b2bua2.conf
+
+# mand config 
+mandconfig
+TGT_ID1=`trunktarget $CADDR  $CPORT1 b=1 n=b2buaTD1 gid=10001 p=\{ii:15,mi:180,fu:1022,tu:1033\}`
+TGT_ID2=`trunktarget 0.0.0.0 0 b=1 n=b2buaTD2 gid=10001 p=\{ii:15,mi:180,fu:1022,tu:1033\}`\
+    did=1024 pass=pa55 reg=1
+TARGET_ID=0;addrule io=4 p=0 d=0 s=0 r=. b=2001
+echo "* 10001 n=myRG1" > siprouting.conf
+echo "* 12001 nm=sendRule tgt=$TGT_ID1" > b2bua2.conf
+
+
+# sipp config
+sudo ifconfig eth0:1 $CADDR2
+
+
+# UAS 1
+../sipp -i $CADDR -p $CPORT1 -sf uas_options_and_invite.sf
+
+# UAS 2
+../sipp -i $CADDR2 -p $CPORT1 -sf uas_options_and_invite.sf
+
+
+# UAC 
+../sipp -i $SADDR -p $SPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_WAN -sf uac.sf
+
+
+
+
+
+
+
+
+# --------------------------------------------------------------------------------------------
+# OUTBOUND CALL TLS
+# --------------------------------------------------------------------------------------------
+
+
+# Mand configuration 
+mandconfig
+mandclient 1024 $CPORT1
+setvalue alg_defs.conf SIP_SERVER_TRANSPORT 2
+
+
+#sipp config
+sippconfig 1024 1028
+
+# UAS (TLS)
+../sipp_ssl -i $SADDR -p $SPORT1 -t l1 -sf uas.sf
+
+
+
+# UAC  (UDP)
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+# UAC  (TCP)
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -t t1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+# UAC  (TLS)
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -t l1 -inf data_call.csv  $EM_LAN:5061 -sf uac.sf
+
+
+
+
+# --------------------------------------------------------------------------------------------
+# INBOUND TCP TLS
+# --------------------------------------------------------------------------------------------
+
+
+# Mand configuration 
+mandconfig
+mandclient 1024 $CPORT1 tls
+
+
+#sipp config
+sippconfig 1028 1024
+
+# UAS (TLS)
+../sipp_ssl -i $CADDR -p $CPORT1 -t l1 -sf uas.sf
+
+
+
+# UAC  (UDP)
+../sipp -i $SADDR -p $SPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+# UAC  (TCP)
+../sipp -i $SADDR -p $SPORT1 -d 3000 -m 1 -t t1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+# UAC  (TLS)
+../sipp -i $SADDR -p $SPORT1 -d 3000 -m 1 -t l1 -inf data_call.csv  $EM_LAN:5061 -sf uac.sf
+
+
+
+
+# --------------------------------------------------------------------------------------------
+# FORKING
+# --------------------------------------------------------------------------------------------
+
+# Mand configuration 
+mandconfig
+mandclient 1024 $CPORT1 
+
+#sipp config
+sippconfig 1028 1024
+
+# UAS slave 1  
+../sipp -i $SADDR2 -p $SPORT1 -slave s1 -slave_cfg forking.cfg -sf uas_fork_slave_1.sf $EM_WAN
+ 
+# UAS 
+../sipp -i $SADDR -p $SPORT1 -master m -slave_cfg forking.cfg -sf uas_fork_master.sf
+
+# UAC
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+
+
+# --------------------------------------------------------------------------------------------
+#  VIDEO with RTP 
+# --------------------------------------------------------------------------------------------
+
+
+# requires patched sipp
+# UAC
+sudo ../sipp_play -i $CADDR3  -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac_video_rtp.sf\
+         -mp 7000 -mi $CADDR3
+# UAS
+../sipp -i $CADDR2  -rtp_echo -sf uas_video_rtp.sf -mi $CADDR2
+
+
+
+# --------------------------------------------------------------------------------------------
+# LAN 2 LAN CALL
+# --------------------------------------------------------------------------------------------
+
+# mand default config
+mandconfig 
+
+# add two clients caller (1024) callee (1029)
+mandclient 1024 $CPORT1
+mandclient 1029 $CPORT2
+
+# add ewua line 1028
+cat ~/attic/config/sipua_defs.conf | awk -F "=" '\
+    /ENABLE_SIPUA/     {print $1 "=on";     next};
+    /ENABLE_REGISTER/  {print $1 "=off";    next};
+    /SIPUA_DISP_NAME0/ {print $1 "=1028";   next};
+    /SIPUA_USER_NAME0/ {print $1 "=1028";   next};
+    /SIPUA_USER_AUTH_NAME0/ {print $1 "=1028"; next};
+    {print}' > sipua_defs.conf
+echo "SIPUA_VIRTUAL_IP=$CADDR2" >> sipua_defs.conf
+
+# Emulate 4500 platform
+echo "PLATFORM=E_4500" > /etc/platform
+sudo sh -c "cat << END > /var/ewn_model
+EWN_MODEL=4508T4
+MODEL_FXS_PORTS=6
+MODEL_FXO_PORTS=2
+END"
+
+
+# UAS  (1029, on WAN side)
+../sipp -i $SADDR -p $SPORT1 -sf uas.sf
+
+# UAS  (1024, on LAN side), Dont run when using as UAC
+../sipp -i $CADDR3 -p $CPORT1 -sf uas.sf
+
+# UAS (FXS)
+../sipp -i $CADDR2 -p $EWUA_SIPPORT -sf uas.sf
+
+# Soft Switch (either UAS or SS can run at one time)
+python sipproxy2.py -i $SADDR -p $SPORT1 -r $EM_WAN
+
+# LAN 2 WAN call
+sippconfig 1024 1029
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+# LAN 2 LAN call
+sippconfig 1024 1028
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+
+# FXS to IP (LAN 2 LAN call )
+sippconfig 1028 1024
+../sipp -i $CADDR2 -p $EWUA_SIPPORT -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+
+
+# --------------------------------------------------------------------------------------------
+# LAN 2 LAN CALL with B2BUA
+# --------------------------------------------------------------------------------------------
+
+# mand default config
+mandconfig 
+
+# add two clients caller (1024) callee (1029)
+mandclient 1024 $CPORT1
+mandclient 1028 $CPORT2
+
+
+# Soft Switch 
+sudo python b2bua_simple.py -f -l $SADDR -p $SPORT1 -n $EM_WAN
+# Sipp
+sippconfig 1024 1028
+
+
+# UAC (1024)
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+# UAS (1028)
+../sipp -i $CADDR -p $CPORT2 -sf uas.sf
+
+
+
+
+# --------------------------------------------------------------------------------------------
+# WAN 2 WAN CALL with PBX on LAN and SOFT-SWITCH on WAN
+# --------------------------------------------------------------------------------------------
+
+# mand default config
+mandconfig 
+
+# Sipp
+sippconfig 1024 1028
+
+# FXS
+python b2bua_my.py -f -d dialplan_pbx -c contexts_pbx -l $CADDR2 -p $EWUA_SIPPORT
+
+# Soft Switch
+python b2bua_my.py -f -d dialplan_server -c contexts_server -l $SADDR -p $SPORT1
+
+# UAS (1022) 
+../sipp -i $CADDR2 -p $CPORT1 -sf uas.sf
+
+# UAS (1028)
+../sipp -i $CADDR2 -p $CPORT3  -sf uas.sf
+
+# UAC (5024) on WAN
+../sipp -i $SADDR2 -m 1 -inf data_call2.csv  $SADDR:$SPORT1 -sf uac_nobye.sf
+
+# UAC (1024) on LAN
+../sipp -i $CADDR2 -p $CPORT2 -d 3000 -m 1 -inf data_call.csv  $CADDR2:$EWUA_SIPPORT -sf uac.sf
+
+

@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE scenario SYSTEM "sipp.dtd">
+
+<!-- Send a challenge to an incomming REGISER requese     -->
+
+<scenario name="Registerar">
+
+  <recv request="REGISTER" />
+
+  <label id="1"/>
+  
+  <send>
+    <![CDATA[
+
+      SIP/2.0 401 Authorization Required
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]SIPpTag01[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      WWW-Authenticate: Digest realm="test.example.com", nonce="[field1]"
+      Content-Length: [len]
+
+    ]]>
+  </send>
+
+  <recv request="REGISTER">
+      <action>
+          <ereg regexp="Digest .*username=\"([^\"]*)\""
+              search_in="hdr"
+              header="Authorization:"
+              assign_to="junk,username" />
+          <verifyauth assign_to="authvalid" username="[$username]" password="[field0]" />
+    </action>
+  </recv>
+
+  <Reference variables="junk" />
+
+
+  <nop hide="true" test="authvalid" next="2" />
+  <nop hide="true" next="1" />
+
+
+  <label id="2"/>
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>;expires=[field2]
+      Content-Length: 0
+      Expires: [field3]
+
+    ]]>
+  </send>
+
+</scenario>

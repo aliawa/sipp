@@ -1,0 +1,349 @@
+# mand config
+mandconfig
+trunktarget $CADDR $CPORT1 n=myPbx b=1
+
+# sipp config
+sippconfig 1024 1028
+
+# set path
+PATH=$PATH:/home/aawais/workspace/sipp:/home/aawais/workspace/sipp/scripts
+alias sudo='sudo env PATH=$PATH'
+
+# --------------------------------------------------------------------------------------------
+# 1.1 PRACK PASS-THROUGH NO SDP
+# --------------------------------------------------------------------------------------------
+
+# Start UAS on the configured sip proxy address
+sipp -i $SADDR -p $SPORT1 -sf uas_prack.sf
+
+# Start UAC 
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac_prack.sf
+
+
+# --------------------------------------------------------------------------------------------
+# 1.2 PRACK OFFER IN 183 
+# --------------------------------------------------------------------------------------------
+
+# UAS
+sudo sipp -i $SADDR -p $SPORT1 -sf uas_prack_sdp.sf
+
+# UAC
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac_prack_sdp.sf \
+         -rtp_echo
+
+
+
+# test passes when two way media is seen after prack and uac has no erros.
+# scenario will generate <pid>.pcap
+# verify: tcpdump -r <pid>.pcap | wc -l
+# The result should be close to 236
+# Requires: rtp.sh
+
+
+# --------------------------------------------------------------------------------------------
+# 1.3 PRACK OFFER-2 IN PRACK
+# --------------------------------------------------------------------------------------------
+
+# UAS
+sipp -i $SADDR -p $SPORT1 -sf uas_prack_sdp_second_offer.sf -rtp_echo
+
+# UAC
+sudo sipp_play -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv \
+   -mp 7000 $EM_LAN -sf uac_prack_sdp_second_offer.sf
+
+
+# Second offer in prack adds video. 
+# After 183 EM should drop video packets
+# Verify: 
+# Audio packets received by UAS (Stream 1): 472
+# Video packets received by UAS (Stream 2): 219
+
+
+
+# --------------------------------------------------------------------------------------------
+# 2.1 PRACK on CLIENT SIDE ONLY
+# --------------------------------------------------------------------------------------------
+
+# UAS
+sipp -i $SADDR -p $SPORT1 -sf uas_prack.sf
+
+# UAC
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+
+# --------------------------------------------------------------------------------------------
+# 2.1.1  PRACK on CLIENT SIDE ONLY (MIXED RESPONSES, Bug EM-10595)
+# --------------------------------------------------------------------------------------------
+
+# UAS
+sipp -i $SADDR -p $SPORT1 -d 1000 -sf uas_prack_mixed.sf
+
+# UAC
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+
+
+
+# --------------------------------------------------------------------------------------------
+# 2.2 PRACK on CLIENT SIDE ONLY (EARLY BYE)
+# --------------------------------------------------------------------------------------------
+
+# UAS
+sipp -i $SADDR -p $SPORT1 -sf uas_prack.sf
+
+# UAC
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac_early_bye.sf
+
+
+
+# --------------------------------------------------------------------------------------------
+# 2.3 PRACK on SERVER SIDE ONLY (BEST CASE: delay between 180 and 200)
+# --------------------------------------------------------------------------------------------
+
+# UAS
+sipp -i $SADDR -p $SPORT1 -d 4000 -sf uas_delay.sf
+
+# UAC
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf \
+uac_prack.sf
+
+# Note
+must make sure that UAC has received multiple 180s, because B2BUA must
+retransmit 180s when prack is not arriving.
+
+
+# --------------------------------------------------------------------------------------------
+# 2.4 PRACK on SERVER SIDE ONLY (200 PRACK race conditon)
+# --------------------------------------------------------------------------------------------
+
+# UAS
+sipp -i $SADDR -p $SPORT1 -sf uas.sf
+
+# UAC
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf \
+uac_prack.sf
+
+
+# --------------------------------------------------------------------------------------------
+# 2.5  PRACK on SERVER SIDE ONLY (DELAYED PRACK)
+# --------------------------------------------------------------------------------------------
+
+# UAS
+sipp -i $SADDR -p $SPORT1 -d 12000 -sf uas_delay.sf
+
+# UAC
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf \
+uac_prack_delay.sf
+
+
+# --------------------------------------------------------------------------------------------
+# 2.6  PRACK on SERVER SIDE ONLY (NO PRACK)
+# --------------------------------------------------------------------------------------------
+
+# UAS
+sipp -i $SADDR -p $SPORT1 -d 10000 -sf uas_delay.sf
+
+# UAC
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf \
+    uac_prack_required_no_prack.sf
+
+
+
+# --------------------------------------------------------------------------------------------
+# 2.8 INITIAL INVITE WITH Supported:100rel (Remote UAS no PRACK support)
+# --------------------------------------------------------------------------------------------
+
+# UAS
+sipp -i $SADDR -p $SPORT1 -sf uas.sf
+
+# UAC
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac_prack_supported.sf
+
+
+# Auto PRACK mediation kicks-in when INVITE contains Require:100rel not with 
+# Supported:100rel
+# In this case remoted UAC claims that it supports PRACK but actually it does
+# not 
+# Remote UAS also doe not support PRACK so normal signalling
+
+
+# --------------------------------------------------------------------------------------------
+# 2.8.1 INITIAL INVITE WITH Supported:100rel (Remote UAS supports PRACK)
+# --------------------------------------------------------------------------------------------
+
+# UAS
+sipp -i $SADDR -p $SPORT1 -sf uas_prack.sf
+
+# UAC
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac_prack_supported.sf
+
+# Auto PRACK mediation kicks-in when INVITE contains Require:100rel not with 
+# Supported:100rel
+# In this case remoted UAC claims that it supports PRACK but actually it does
+# not.
+# Remote UAS retransmitts 180 until it times out
+
+
+# --------------------------------------------------------------------------------------------
+# 3.1 UPDATE PASS-THROUGH | NO SDP | ESTABLISHED DIALOG
+# --------------------------------------------------------------------------------------------
+
+# UAS
+sipp -i $SADDR -p $SPORT1 -sf uas_update_confirmed_dlg.sf
+
+# UAC
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN \
+    -sf uac_update_confirmed_dlg.sf
+
+
+
+# --------------------------------------------------------------------------------------------
+# 3.2 UPDATE PASS-THROUGH | NO SDP | EARLY DIALOG
+# --------------------------------------------------------------------------------------------
+
+# UAS
+sipp -i $SADDR -p $SPORT1 -sf uas_update_early_dlg.sf
+
+# UAC
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN \
+    -sf uac_update_early_dlg.sf
+
+
+
+# --------------------------------------------------------------------------------------------
+# 4.1 UPDATE on CLIENT SIDE ONLY (EARLY DIALOG)
+# --------------------------------------------------------------------------------------------
+
+# UAS
+sipp -i $SADDR -p $SPORT1 -sf uas_update_early_dlg_send.sf
+
+# UAC
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+
+# --------------------------------------------------------------------------------------------
+# 4.3 UPDATE on SERVER SIDE ONLY, EARLY DIALOG, (BEST CASE: delay between 180 and 200)
+# --------------------------------------------------------------------------------------------
+
+# UAS
+sipp -i $SADDR -p $SPORT1 -sf uas_prack_delay.sf
+
+# UAC
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf \
+    uac_update_early_dlg.sf
+
+
+# --------------------------------------------------------------------------------------------
+# 4.4 UPDATE INTEROP CONFIRMED DIALOG
+# --------------------------------------------------------------------------------------------
+
+# UAS
+sipp -i $SADDR -p $SPORT1 -sf uas.sf
+
+# UAC
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf \
+uac_update_confirmed_dlg.sf
+
+
+
+# --------------------------------------------------------------------------------------------
+# 5.1 MULTIPLE 183s Forking
+# --------------------------------------------------------------------------------------------
+
+# UAS slave 1  
+sipp -i $SADDR2 -p $SPORT1 -slave s1 -slave_cfg forking.cfg -sf \
+uas_fork_slave_1.sf $EM_WAN:5090
+ 
+# UAS 
+sipp -i $SADDR -p $SPORT1 -master m -slave_cfg forking.cfg -sf uas_fork_master.sf
+
+# UAC
+sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac.sf
+
+# Success
+# UAC succeeds with 2 180 responses (important)
+
+
+# --------------------------------------------------------------------------------------------
+# 5.1 b) MULTIPLE 183s Forking (Clearing early dialogs)
+# --------------------------------------------------------------------------------------------
+
+# UAS slave 1  
+sipp -i $SADDR2 -p $SPORT1 -slave s1 -slave_cfg forking.cfg -sf \
+uas_fork_slave_1.sf $EM_WAN:5090
+ 
+# UAS 
+sipp -i $SADDR -p $SPORT1 -master m -slave_cfg forking.cfg -sf uas_fork_master.sf
+
+# UAC
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf \
+uac_nobye.sf
+
+
+
+
+
+# --------------------------------------------------------------------------------------------
+# 5.2 MULTIPLE 183s Forking with early media
+# UAC sends:
+#    10 rtp packets (DTMF tone 1) after receiving 180.
+#    10 rtp packets (DTMF tone 2) after receiving 183.
+#    10 rtp packets (DTMF tone 3) after receiving 200.
+# Result:
+#    UAS slave should receive 9 or 10 RTP packets
+#    UAS master should receive 18 to 20 RTP packets.
+#    DTMF tone 1 packets should all go to UAS slave.
+#    DTMF tone 2 packets should all go to UAS master.
+#    DTMF tone 3 packets should all go to UAS master.
+# 
+# --------------------------------------------------------------------------------------------
+
+# UAS slave 1
+sipp -i $SADDR2 -p $SPORT1 -slave s1 -slave_cfg forking.cfg -sf \
+uas_fork_slave_1_rtp.sf $EM_WAN:5090 -rtp_echo
+
+# UAS master
+sipp -i $SADDR -p $SPORT1 -master m -slave_cfg forking.cfg -sf \
+uas_fork_master_rtp.sf -rtp_echo
+
+# UAC
+sudo sipp_play -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv \
+$EM_LAN -sf uac_fork_rtp.sf
+
+
+
+
+
+# --------------------------------------------------------------------------------------------
+# 5.3 MULTIPLE 200s Forking with early media
+# UAC sends:
+#    10 rtp packets (DTMF tone 1) after receiving 180.
+#    10 rtp packets (DTMF tone 2) after receiving 183.
+#    10 rtp packets (DTMF tone 3) after receiving first 200.
+#    10 rtp packets (DTMF tone 4) after receiving second 200.
+# Result:
+#    UAS slave should receive 18 to 20 RTP packets
+#    UAS master should receive 18 to 20 RTP packets.
+#    DTMF tone 1 packets should all go to UAS slave.
+#    DTMF tone 2 packets should all go to UAS master.
+#    DTMF tone 3 packets should all go to UAS slave.
+#    DTMF tone 3 packets should all go to UAS slave.
+# 
+# --------------------------------------------------------------------------------------------
+
+# UAS SLAVE
+sipp -i $SADDR2 -p $SPORT1 -slave s1 -slave_cfg forking.cfg -sf \
+  uas_fork_slave_1_rtp_200.sf $EM_WAN:5090 -rtp_echo
+
+# UAS MASTER
+sipp -i $SADDR -p $SPORT1 -master m -slave_cfg forking.cfg -sf \
+  uas_fork_master_rtp_200.sf -rtp_echo
+
+# UAC
+sudo sipp_play -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv \
+$EM_LAN -sf uac_fork_rtp_200.sf
+
+
+
+
+

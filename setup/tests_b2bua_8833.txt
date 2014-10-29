@@ -1,0 +1,70 @@
+
+# --------------------------------------------------------------------------------------------
+# B2BUA REGISTER CLIENT
+# --------------------------------------------------------------------------------------------
+
+# Mand configuration
+mandconfig $SADDR $SPORT1
+echo "* 2 usr=1234 pass=12345678" > /etc/config/b2bua.conf
+
+# sipp configuration
+echo -e "SEQUENTIAL\n1800;3600" > data_registrar.csv
+
+# start Registrar
+../sipp -i $SADDR -p $SPORT1 -inf data_registrar.csv -sf uas_register_challenge.sf
+
+# Testing Error Responses
+# Edit the scenario to select the error response
+../sipp -i $SADDR -p $SPORT1 -sf uas_register_error.sf -deadcall_wait 0 
+
+
+
+
+
+# --------------------------------------------------------------------------------------------
+# INBOUND CALL 
+# --------------------------------------------------------------------------------------------
+
+# Mand configuration-B2BUA call to the target matched by pattern 8.8.3.3 Known proxy
+mandconfig
+trunktarget $CADDR $CPORT1 n=tt b=1
+addrule io=0 p=0 d=0 s=0 b=0 r=1028 a=408
+
+
+# Mand configuration-B2BUA call to the target matched by pattern 8.8.3.3 Unknow proxy
+mandconfig $PROXY2
+trunktarget $CADDR $CPORT1 n=tt b=1
+addrule io=0 p=0 d=0 s=0 b=0 r=1028 a=408
+setvalue alg_defs.conf SIP_USE_INBOUND_PROXIES on
+
+
+#sipp config
+sippconfig 1028 1024 
+
+
+# UAS
+../sipp -i $CADDR -p $CPORT1 -sf uas_agent_check.sf
+
+# UAC 
+../sipp -i $SADDR -p $SPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_WAN -sf uac.sf
+
+
+
+
+# --------------------------------------------------------------------------------------------
+# RE-INVITE
+# Outbound call. Re-Invite from called-party on WAN
+# --------------------------------------------------------------------------------------------
+
+# Mand configuration 8.8.3.3
+mandconfig
+trunktarget $CADDR $CPORT1 n=sipp b=1
+
+
+# The CADDR parameter is for c= address in sdp of reinvite
+echo -e "SEQUENTIAL\n1024;1028;$CADDR" > data_call.csv
+../sipp -i $SADDR -p $SPORT1 -inf data_call.csv $EM_LAN -sf uas_reinvite_sender_agent_check.sf
+
+# uac
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv $EM_LAN -sf uac_reinvite_receiver.sf
+

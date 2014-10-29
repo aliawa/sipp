@@ -1,0 +1,75 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE scenario SYSTEM "sipp.dtd">
+
+<scenario name="Generated Scenario for 70.167.106.233:5060.xml">
+
+  <recv request="INVITE" crlf="true">
+  </recv>
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 100 Trying
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]SIPpTag01[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: [len]
+
+    ]]>
+  </send>
+
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]SIPpTag01[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Contact: <sip:[local_ip]:[local_port];transport=udp>
+      Allow: ACK,BYE,CANCEL,INFO,INVITE,OPTIONS,PRACK,REFER,NOTIFY,UPDATE
+      Accept: application/media_control+xml,application/sdp
+      Content-Type: application/sdp
+      Content-Length: [len]
+
+      v=0
+      o=BroadWorks 2730979 1 IN IP4 [local_ip]
+      s=-
+      c=IN IP4 [media_ip]
+      t=0 0
+      m=audio [auto_media_port] RTP/AVP 0 101
+      a=rtpmap:0 PCMU/8000
+      a=rtpmap:101 telephone-event/8000
+      a=fmtp:101 0-16
+      a=label:Audio
+      a=ptime:20
+      a=sendrecv
+
+    ]]>
+  </send>
+
+  <recv request="ACK" crlf="true">
+  </recv>
+
+  <recv request="BYE" crlf="true">
+  </recv>
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 200 Minimal Impact
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]SIPpTag01[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: [len]
+
+    ]]>
+  </send>
+
+</scenario>

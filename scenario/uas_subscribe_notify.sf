@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE scenario SYSTEM "sipp.dtd">
+
+<!-- added x-my line at the end of SDP to make sure that the a= header
+     before that gets a CRLF. This is a bug in sipp -->
+
+
+<scenario name="Basic UAS responder">
+
+
+  <recv request="SUBSCRIBE" >
+    <action>
+      <ereg regexp="sip:[[:alnum:]]*@[0-9.]*(:[0-9]*)?" search_in="hdr" header="From:" assign_to="1" />
+      <ereg regexp="sip:([[:alnum:]]*)@[0-9.]*(:[0-9]*)?" search_in="hdr" header="To:" assign_to="2,toUsr" />
+      <ereg regexp="tag=.*" search_in="hdr" header="From:" assign_to="3" />
+      <ereg regexp=".*" search_in="hdr" header="Expires:" assign_to="exp" />
+    </action>
+  </recv>
+
+
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]SIPpTag01[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Expires: [$exp] 
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Length: [len]
+
+    ]]>
+  </send>
+
+
+  <send>
+    <![CDATA[
+        NOTIFY [$1] SIP/2.0
+        Via: SIP/2.0/UDP [local_ip]:[local_port];branch=z9hG4bk-[pid][call_number]
+        From: <[$2]>;tag=[pid]SIPpTag01[call_number]
+        To: <[$1]>;[$3]
+        [last_Call-ID:]
+        CSeq: 1 NOTIFY
+        Contact: <sip:[$toUsr]@[local_ip]:[local_port]>
+        Max-Forwards: 70
+        Event: dialog
+        Subscription-state: active;expires=3598
+        Content-Length: 0
+
+    ]]>
+  </send>
+
+
+  <recv response="200" rtd="true", crlf="true">
+  </recv>
+
+
+  <!-- subscription refresh request -->
+
+  <recv request="SUBSCRIBE">
+    <action>
+      <ereg regexp=".*" search_in="hdr" header="Expires:" assign_to="exp" />
+    </action>
+  </recv>
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]SIPpTag01[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Expires:[$exp]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Length: [len]
+
+    ]]>
+  </send>
+
+
+</scenario>
+

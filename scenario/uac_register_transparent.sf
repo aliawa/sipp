@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<scenario name="register">
+
+<!-- 
+  send REGISTER
+  wait for 200 OK or 401
+-->
+
+<!-- JUMPS 1: End -->
+
+  <send >
+    <![CDATA[
+      REGISTER sip:[field2] SIP/2.0
+      Via: SIP/2.0/[transport] [local_ip]:[local_port];branch=[branch]
+      To: <sip:[field0]@[field2]:[remote_port]>
+      From: <sip:[field0]@[field2]:[remote_port]>;tag=[call_number]
+      Contact: <sip:[field0]@[field2]:[local_port]>;transport=[transport]
+      Expires: 3600
+      Call-ID: [call_id]
+      CSeq: [cseq] REGISTER
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <recv response="200" optional="true" next="1" timeout="10000">
+  </recv>
+
+  <recv response="401" auth="true"> 
+  </recv>
+
+ <!-- Register with Authentication -->
+  <send >
+    <![CDATA[
+      REGISTER sip:[field2] SIP/2.0
+      Via: SIP/2.0/[transport] [local_ip]:[field2];branch=[branch]
+      To: <sip:[field0]@[field2]:[remote_port]>
+      From: <sip:[field0]@[field2]:[remote_port]>;tag=[call_number]
+      Contact: <sip:[field0]@[field2]:[local_port]>;transport=[transport]
+      [field1]
+      Expires: 3600
+      Call-ID: [call_id]
+      CSeq: [cseq] REGISTER
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <recv response="200" timeout="10000">
+  </recv>
+
+  <!--End -->
+  <label id="1"/>
+
+</scenario>

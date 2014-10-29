@@ -1,0 +1,28 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE scenario SYSTEM "sipp.dtd">
+
+<scenario name="Notify Sender">
+
+  <send>
+     <![CDATA[
+
+        NOTIFY sip:5162809874@null SIP/2.0
+        Via: SIP/2.0/UDP [local_ip]:5060;branch=[branch]
+        Call-ID:[call_id]
+        CSeq:1 NOTIFY
+        Event: resynch
+        From:<sip:confagent@[local_ip]>;tag=[pid]-[call_number]
+        To:<sip:5162809874@null>
+        Content-Length:0
+        Expires:0
+        Max-Forwards:70
+
+
+     ]]>
+  </send>
+
+  <recv response="200">
+  </recv>
+                              
+</scenario>
+

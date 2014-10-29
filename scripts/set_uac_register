@@ -1,0 +1,38 @@
+#!/bin/bash
+
+function usage() {
+    echo 
+    echo " Modifies the data_reg.csv file"
+    echo " Usage:"
+    echo "   $(basename $0) <username> <password> <port> [expires] [auth_user]"
+    echo    
+    echo
+}
+
+
+if [ $# -lt 3 ]; then
+    usage
+    exit 1
+fi
+
+
+USERNAME=$1
+PASSWORD=$2
+PORT=$3
+EXPIRES=${4:-3600}
+AUTH_USER=${5:-$USERNAME}
+
+
+
+echo "SEQUENTIAL"    > data_reg.csv
+echo -n "$USERNAME;" >> data_reg.csv
+echo -n "[authentication username=$AUTH_USER password=$PASSWORD];" >> data_reg.csv
+echo -n "$PORT;"   >> data_reg.csv
+echo  "$EXPIRES" >> data_reg.csv
+
+echo
+echo -e "\033[1mdata_reg.csv\033[0m"
+cat data_reg.csv
+echo
+
+

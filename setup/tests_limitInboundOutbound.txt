@@ -1,0 +1,122 @@
+# for all tests
+# Since Windows is used in these tests. The SIPP on windows does not
+# like the icmp messages from the mand machine and closes the socket
+# to avoid this we use this iptables rule on the mand machine.
+sudo iptables -A OUTPUT -p icmp -s 0/0 -j DROP
+
+# to remove this rule again
+sudo iptables -D OUTPUT 1
+
+
+# --------------------------------------------------------------------------------------------
+# NORMAL MODE
+# --------------------------------------------------------------------------------------------
+
+#1. Test outbound call
+sippconfig 1024 1028  $SADDR $SPORT1
+## UAS on SADDR
+../sipp -i $SADDR -p $SPORT1 -sf uas_rcv_bye.sf
+## UAS on PROXY2_ADDR 
+..\sipp -i %PROXY2_ADDR% -p %PROXY2_PORT% -inf data_call.csv -sf uas_recordroute_hdr.sf
+## Call with Route Header pointing to $SADDR
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac_route_hdr.sf
+
+#2. Test inbound call 
+sippconfig 1028 1024
+## UAS
+../sipp -i $CADDR -p $CPORT1 -sf uas.sf
+## UAC
+../sipp -i $SADDR -p $SPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_WAN -sf uac.sf
+
+
+# Config common
+mandconfig $PROXY2_ADDR $PROXY2_PORT
+mandclient 1024
+
+# Config 1
+setvalue alg_defs.conf SIP_USE_ALLOWED_PROXIES off
+setvalue alg_defs.conf SIP_USE_INBOUND_PROXIES off
+# Config 1
+setvalue alg_defs.conf SIP_USE_ALLOWED_PROXIES on
+setvalue alg_defs.conf SIP_USE_INBOUND_PROXIES off
+# Config 2
+setvalue alg_defs.conf SIP_USE_ALLOWED_PROXIES off
+setvalue alg_defs.conf SIP_USE_INBOUND_PROXIES on
+# Config 3
+setvalue alg_defs.conf SIP_USE_ALLOWED_PROXIES on
+setvalue alg_defs.conf SIP_USE_INBOUND_PROXIES on
+
+
+
+# --------------------------------------------------------------------------------------------
+# TRANSPARENT MODE
+# --------------------------------------------------------------------------------------------
+
+#1. Test outbound call
+sippconfig 1024 1028 $PROXY2_ADDR $PROXY2_PORT
+sudo route add -host $PROXY2_ADDR gw $EM_LAN
+sudo route del -host $PROXY2_ADDR
+## UAS
+..\sipp -i %PROXY2_ADDR% -p %PROXY2_PORT% -sf uas.sf
+## UAC
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $PROXY2_ADDR:$PROXY2_PORT -sf uac_transparent.sf
+
+#2. Test inbound call 
+sippconfig 1028 1024
+## UAS
+../sipp -i $CADDR -p $CPORT1 -sf uas.sf
+## UAC
+../sipp -i $PROXY2_ADDR -p $PROXY2_PORT -d 3000 -m 1 -inf data_call.csv  $EM_WAN -sf uac.sf
+
+
+# Config common
+mandconfig 
+mandclient 1024
+setvalue alg_defs.conf SIP_TRANSPARENT on
+
+# Config 1
+setvalue alg_defs.conf SIP_USE_ALLOWED_PROXIES on
+setvalue alg_defs.conf SIP_USE_INBOUND_PROXIES off
+# Config 2
+setvalue alg_defs.conf SIP_USE_ALLOWED_PROXIES off
+setvalue alg_defs.conf SIP_USE_INBOUND_PROXIES on
+# Config 3
+setvalue alg_defs.conf SIP_USE_ALLOWED_PROXIES on
+setvalue alg_defs.conf SIP_USE_INBOUND_PROXIES on
+
+
+
+
+
+# --------------------------------------------------------------------------------------------
+# OBP Mode
+# --------------------------------------------------------------------------------------------
+
+#1. Test outbound call
+sippconfig 1024 1028 $SADDR $SPORT
+## UAS
+../sipp -i $SADDR -p $SPORT1 -sf uas.sf
+## UAC
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac_transparent.sf
+
+#2. Test inbound call 
+sippconfig 1028 1024
+## UAS
+../sipp -i $CADDR -p $CPORT1 -sf uas.sf
+## Call with Route Header pointing to $SADDR
+../sipp -i $SADDR -p $SPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_WAN -sf uac.sf
+
+
+# Config common
+mandconfig $PROXY2_ADDR $PROXY2_PORT
+mandclient 1024
+
+# Config 1
+setvalue alg_defs.conf SIP_USE_ALLOWED_PROXIES on
+setvalue alg_defs.conf SIP_USE_INBOUND_PROXIES off
+# Config 2
+setvalue alg_defs.conf SIP_USE_ALLOWED_PROXIES off
+setvalue alg_defs.conf SIP_USE_INBOUND_PROXIES on
+# Config 3
+setvalue alg_defs.conf SIP_USE_ALLOWED_PROXIES on
+setvalue alg_defs.conf SIP_USE_INBOUND_PROXIES on

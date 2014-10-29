@@ -1,0 +1,4 @@
+1024;[authentication username=10%d password=10%d];10.10.10.149
+1024;[authentication username=1024 password=pa55];10.10.10.149
+1024;[authentication username=1024 password=pa55];10.10.10.149
+1024;[authentication username=1024 password=pa55];10.10.10.149

@@ -1,0 +1,143 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE scenario SYSTEM "sipp.dtd">
+
+
+<scenario name="UAS FORK SLAVE 1">
+
+  <recvCmd src="m">
+    <action>
+      <ereg regexp=".*" search_in="hdr" header="Via:" assign_to="via"/>
+      <ereg regexp=".*" search_in="hdr" header="From_Hdr:" assign_to="from"/>
+      <ereg regexp=".*" search_in="hdr" header="To:" assign_to="to"/>
+      <ereg regexp=".*" search_in="hdr" header="Call-ID:" assign_to="callid"/>
+      <ereg regexp=".*" search_in="hdr" header="CSeq:" assign_to="cseq"/>
+      <log message="Via: --> [$via]" />
+      <log message="From: --> [$from]" />
+      <log message="To: --> [$to]" />
+      <log message="Call-ID: --> [$callid]" />
+      <log message="CSeq: --> [$cseq]" />
+    </action>
+  </recvCmd>
+ 
+  
+  <send>
+    <![CDATA[
+
+      SIP/2.0 100 Trying
+      Via:[$via]
+      From:[$from]
+      To:[$to]
+      Call-ID:[$callid]
+      CSeq:[$cseq]
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 180 Ringing
+      Via:[$via]
+      From:[$from]
+      To:[$to];tag=[pid]-sipp-slave
+      Call-ID:[$callid]
+      CSeq:[$cseq]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Type: application/sdp
+      Content-Length: [len]
+
+      v=0
+      o=slave1 13655760 13655760 IN IP[local_ip_type] [local_ip]
+      s=-
+      c=IN IP[media_ip_type] [media_ip]
+      t=0 0
+      m=audio [media_port] RTP/AVP 0
+      a=rtpmap:0 PCMU/8000
+
+    ]]>
+  </send>
+
+
+  <!-- Wait for media to complete -->
+  <pause milliseconds="1800"/>
+
+
+  <!-- Tell master we are done with 180 -->
+  <sendCmd dest="m">
+    <![CDATA[
+      Call-ID:[$callid]
+      From: s1
+    ]]>
+  </sendCmd>
+
+  <!-- wait for signal from master that it has sent 183 -->
+  <recvCmd src="m">
+  </recvCmd>
+
+  <!-- pause for rtp playback to complete -->
+  <pause milliseconds="1800" />
+
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      Via:[$via]
+      From:[$from]
+      To:[$to];tag=[pid]-sipp-slave
+      Call-ID:[$callid]
+      CSeq:[$cseq]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Type: application/sdp
+      Content-Length: [len]
+
+      v=0
+      o=slave1 13655760 13655760 IN IP[local_ip_type] [local_ip]
+      s=-
+      c=IN IP[media_ip_type] [media_ip]
+      t=0 0
+      m=audio [media_port] RTP/AVP 0
+      a=rtpmap:0 PCMU/8000
+
+    ]]>
+  </send>
+
+
+  <recv request="ACK" rtd="true" crlf="true">
+  </recv>
+
+  <!-- wait for media to complete -->
+  <pause milliseconds="1800" />
+
+  <!-- tell master to send 200 now -->
+  <sendCmd dest="m">
+    <![CDATA[
+      Call-ID:[$callid]
+      From: s1 
+    ]]>
+  </sendCmd>
+
+
+  <recv request="BYE">
+  </recv>
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+
+</scenario>
+

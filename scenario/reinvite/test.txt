@@ -1,0 +1,14 @@
+
+
+$SIPP_BIN -i $CADDR -p $CPORT1 -inf data_call.csv -sf uas_dialog_creator.sf -m 1
+$SIPP_BIN -i $SADDR -p $SPORT1 -inf data_call.csv -m 1 $EM_WAN -sf uac_dialoag_creator.sf
+
+
+$SIPP_BIN -i $CADDR -p $CPORT1 -inf 1028.dat -m 1 -sf uas_in_dialog.sf
+$SIPP_BIN -i $SADDR -p $SPORT1 -inf 1024.dat -m 1 $EM_WAN -sf uac_in_dialog.sf
+
+$SIPP_BIN -i $SADDR -p $SPORT1 -inf 1024.dat -m 1 $EM_WAN -sf uas_in_dialog.sf
+$SIPP_BIN -i $CADDR -p $CPORT1 -inf 1028.dat -m 1 -sf uac_in_dialog.sf $EM_LAN
+
+$SIPP_BIN -i $CADDR -p $CPORT1 -inf 1028.dat -m 1 -sf uas_bye.sf
+$SIPP_BIN -i $SADDR -p $SPORT1 -inf 1024.dat -m 1 $EM_WAN -sf uac_bye.sf

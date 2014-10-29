@@ -1,0 +1,113 @@
+# mand config
+mandconfig
+
+
+# /etc/config/client_policy
+version="1.0";
+last_modified={
+"date":"Thu Jan  7 15:03:34 2010",
+"secs":1.26288e+09 };
+client_policy={
+"default_domain":{
+ "default_user":{
+  "exp":{
+   "cmn":30,
+   "cmx":45,
+   "ups":3600},
+  "auth":"password"},
+ "users":{
+  "5551001":{
+   "pwd":"@2275614686F3C9FBF",
+   "auth":"password"},
+  "5551002":{
+   "pwd":"@2275614686F3C9FBF",
+   "auth":"password"},
+  "5551003":{
+   "pwd":"@2275614686F3C9FBF",
+   "auth":"password"},
+  }},
+"domains":{},
+"penalty_box":{
+ "threshold":0,
+ "max_penalty":10} };
+
+
+# set path
+PATH=$PATH:/home/aawais/workspace/sipp:/home/aawais/workspace/sipp/scripts
+alias sudo='sudo env PATH=$PATH'
+
+# --------------------------------------------------------------------------------------------
+# 1.1 CLIENT (WAN SIDE) TO PUBLIC URI
+# --------------------------------------------------------------------------------------------
+
+sippconfig 5551001 5551002 $SADDR2 $SPORT1 $SADDR $SPORT1
+echo "SEQUENTIAL" > data_reg.csv
+echo "5551001;[authentication username=5551001 password=password];$SADDR;$SPORT1" >> data_reg.csv
+
+# UAS
+sudo sipp -i $SADDR2 -p $SPORT1 -sf uas_reinvite_receiver_rtp.sf
+
+# REGISTER CLIENT
+sipp_ssl -i  $SADDR -p $SPORT1 -m 1 -inf data_reg.csv  $EM_WAN -sf uac_register.sf
+
+# UAC 
+sudo sipp -i $SADDR -p $SPORT1 -m 1 -inf data_call.csv  $EM_WAN -sf uac_reinvite_sender_rtp.sf
+
+
+
+# --------------------------------------------------------------------------------------------
+# 1.1 CLIENT (LAN SIDE) TO PUBLIC URI
+# --------------------------------------------------------------------------------------------
+
+sippconfig 5551001 5551002 $SADDR2 $SPORT1 $CADDR $CPORT1
+echo "SEQUENTIAL" > data_reg.csv
+echo "5551001;[authentication username=5551001 password=password];$CADDR;$CPORT1" >> data_reg.csv
+
+# UAS
+sudo sipp -i $SADDR2 -p $SPORT1 -sf uas_reinvite_receiver_rtp.sf
+
+# REGISTER CLIENT
+sipp_ssl -i  $CADDR -p $CPORT1 -m 1 -inf data_reg.csv  $EM_LAN -sf uac_register.sf
+
+# UAC 
+sudo sipp -i $CADDR -p $CPORT1 -m 1 -inf data_call.csv  $EM_LAN -sf uac_reinvite_sender_rtp.sf
+
+
+# --------------------------------------------------------------------------------------------
+# 1.2 CLIENT (NATED ON WAN SIDE) TO NON-CLIENT
+# --------------------------------------------------------------------------------------------
+
+# setup sipp
+sippconfig 5551001 5551002 $SADDR2 $SPORT1 $CADDR $CPORT1
+echo "SEQUENTIAL" > data_reg.csv
+echo "5551001;[authentication username=5551001 password=password];$CADDR;$CPORT1" >> data_reg.csv
+
+# UAS
+sudo sipp -i $SADDR2 -p $SPORT1 -sf uas_reinvite_receiver_rtp.sf
+
+# REGISTER CLIENT
+sipp_ssl -i  $SADDR -p $SPORT1 -m 1 -inf data_reg.csv  $EM_WAN -sf uac_register.sf
+
+# UAC 
+sudo sipp -i $SADDR -p $SPORT1 -m 1 -inf data_call.csv  $EM_WAN -sf uac_reinvite_sender_rtp.sf
+
+
+
+# --------------------------------------------------------------------------------------------
+# 1.3 NON-CLIENT TO CLIENT (LAN SIDE)
+# --------------------------------------------------------------------------------------------
+
+sippconfig 5551002 5551001 $EM_WAN 5060 $SADDR $SPORT1
+echo "SEQUENTIAL" > data_reg.csv
+echo "5551001;[authentication username=5551001 password=password];$CADDR;$CPORT1" >> data_reg.csv
+
+# REGISTER CLIENT
+sipp_ssl -i  $CADDR -p $CPORT1 -m 1 -inf data_reg.csv  $EM_LAN -sf uac_register.sf
+
+# UAS
+sudo sipp -i $CADDR -p $CPORT1 -sf uas_reinvite_receiver_rtp.sf
+
+# UAC 
+sudo sipp -i $SADDR -p $SPORT1 -m 1 -inf data_call.csv  $EM_WAN -sf uac_reinvite_sender_rtp.sf
+
+

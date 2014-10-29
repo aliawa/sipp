@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE scenario SYSTEM "sipp.dtd">
+
+<scenario name="Registrar">
+  <recv request="REGISTER">
+    <action>
+      <!-- Save everything in Contact except the expires parameter -->
+      <ereg regexp="(.*)(;expires=[0-9]+)?" search_in="hdr" header="Contact:" assign_to="jk,part1" />
+      <ereg regexp=";expires=[0-9]+(.*)" search_in="hdr" header="Contact:" assign_to="jk,part2" />
+      <log message="[$part1][$part2];expires=[field2]"/>
+    </action>
+  </recv>
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Contact: [$part1][$part2];expires=[field2]
+      Content-Length: 0
+      Expires: [field3]
+
+    ]]>
+  </send>
+</scenario>

@@ -1,0 +1,84 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE scenario SYSTEM "sipp.dtd">
+
+<scenario name="Basic UAS responder">
+	
+  <recv request="INVITE" crlf="true">
+    <action>
+     <ereg regexp=".*" search_in="hdr" header="Call-ID:"  assign_to="2"/>
+	 <ereg regexp=".*" search_in="hdr" header="CSeq:" assign_to="3"/>
+    </action>
+  </recv>
+
+
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 100 Trying
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]SIPpTag01[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+ <send crlf="true">
+    <![CDATA[
+
+      SIP/2.0 180 Ringing
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]SIPpTag01[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <recv  request="CANCEL">
+  </recv>
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <pause milliseconds="500"/>
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 487 Request Cancelled
+      [last_Via:]
+      [last_From:]
+      [last_To:]
+      Call-ID:[$2]
+      CSeq:[$3]
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+
+  <recv  request="ACK">
+  </recv>
+
+  <!-- END LABEL -->
+  <label id="19"/>
+
+</scenario>
+

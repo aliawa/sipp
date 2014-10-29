@@ -1,0 +1,294 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE scenario SYSTEM "sipp.dtd">
+
+<scenario name="Registrar">
+
+  <Global variables="count,expires" />
+
+  <nop hide="true" condexec="count" condexec_inverse="true">
+      <action>
+          <log message="Snd#    Response     Seconds        Expires"/>
+          <log message="----    --------     -------        -------"/>
+      </action>
+  </nop>
+
+
+  <recv request="REGISTER">
+      <action>
+          <assignstr assign_to="1" value="[field0]" />
+          <todouble assign_to="count" variable="1" />
+
+          <test assign_to="snd2001" variable="count" compare="equal" value="2001"/>
+          <test assign_to="snd400" variable="count" compare="equal" value="400"/>
+          <test assign_to="snd600" variable="count" compare="equal" value="600"/>
+          <test assign_to="snd4011" variable="count" compare="equal" value="4011"/>
+          <test assign_to="snd100" variable="count" compare="equal" value="100"/>
+          <test assign_to="snd4012" variable="count" compare="equal" value="4012"/>
+          <test assign_to="snd4071" variable="count" compare="equal" value="4071"/>
+          <test assign_to="snd4072" variable="count" compare="equal" value="4072"/>
+          <test assign_to="snd4231" variable="count" compare="equal" value="4231"/>
+          
+          <test assign_to="snd4232" variable="count" compare="equal" value="4232"/>
+          <test assign_to="snd5031" variable="count" compare="equal" value="5031"/>
+          <test assign_to="snd5032" variable="count" compare="equal" value="5032"/>
+          <test assign_to="snd2002" variable="count" compare="equal" value="2002"/>
+
+
+          <!-- Check Expires Header -->
+          <ereg regexp="[ \t]*([0-9]+)" search_in="hdr" header="Expires:" check_it="true"  assign_to="dummy,expires"/>
+
+          <!-- Time for logging purposes -->
+          <gettimeofday assign_to="seconds,microseconds" />
+
+
+          <log message="[$1] [$seconds] [$expires] [field1] [field2]">
+          </log>
+            
+      </action>
+  </recv>
+
+  <Reference variables="microseconds,dummy"/>
+
+
+
+  <!-- 200 OK  using Expires header -->
+  <send condexec="snd2001">
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      [last_Contact:]
+      Content-Length: 0
+      Expires: 15
+
+    ]]>
+  </send>
+
+
+
+  <!-- 400 Bad Request -->
+  <send condexec="snd400">
+    <![CDATA[
+
+      SIP/2.0 400 Bad Request
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+  
+
+
+  <!-- 600 Busy Everywhere -->
+  <send condexec="snd600">
+    <![CDATA[
+
+      SIP/2.0 600 Busy Everywhere
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+  
+
+
+  <!-- 401 Unauthorized  No WWW-Authenticate header -->
+  <send condexec="snd4011">
+    <![CDATA[
+
+      SIP/2.0 401 Unauthorized
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+      Subject: Missing WWW-Authenticate
+
+      
+    ]]>
+  </send>
+
+
+
+
+  <!-- 100 Trying -->
+  <send condexec="snd100"> 
+    <![CDATA[
+
+      SIP/2.0 100 Trying
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+
+
+  <!-- 401 Unauthorized -->
+  <send condexec="snd4012">
+    <![CDATA[
+
+      SIP/2.0 401 Unauthorized
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+      WWW-Authenticate: Digest realm="x_realm",domain="a.b.c.d",nonce="db",opaque="4f",stale=FALSE,algorithm=MD5
+
+      
+    ]]>
+  </send>
+
+
+
+  <!-- 407 Proxy Authentication Required  No Proxy-Authenticate Header -->
+  <send condexec="snd4071">
+    <![CDATA[
+
+      SIP/2.0 407 Proxy Authentication Required
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+      Subject: Missing Proxy-Authenticate header
+
+    ]]>
+  </send>
+
+
+
+  <!-- 407 Proxy Authentication Required -->
+  <send condexec="snd4072">
+    <![CDATA[
+
+      SIP/2.0 407 Proxy Authentication Required
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+      Proxy-Authenticate: Digest realm="x_realm",domain="a.b.c.d",nonce="db",opaque="4f",stale=FALSE,algorithm=MD5
+
+    ]]>
+  </send>
+  
+  
+  
+  <!-- 423 Interval Too Brief (without Min-Expires header)-->
+  <send condexec="snd4231">
+    <![CDATA[
+
+      SIP/2.0 423 Interval Too Brief
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+      Subject: Missing Min-Expires header
+
+    ]]>
+  </send>
+  
+
+
+  <!-- 423 Interval Too Brief -->
+  <send condexec="snd4232">
+    <![CDATA[
+
+      SIP/2.0 423 Interval Too Brief
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+      Min-Expires: 20
+      Subject: Min-Expires header provided
+
+    ]]>
+  </send>
+  
+
+
+
+  <!-- 503 Service Unavailable (Without Retry-After)-->
+  <send condexec="snd5031">
+    <![CDATA[
+
+      SIP/2.0 503 Service Unavailable
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+      Subject: Missing Retry-After header
+
+    ]]>
+  </send>
+
+
+
+  <!-- 503 Service Unavailable (With Retry-After)-->
+  <send condexec="snd5032">
+    <![CDATA[
+
+      SIP/2.0 503 Service Unavailable
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Content-Length: 0
+      Retry-After: 21
+      Subject: Retry-After header provided
+
+    ]]>
+  </send>
+  
+
+  
+
+
+
+  <!-- 200 OK  using expires parameter -->
+  <send condexec="snd2002">
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:];tag=[pid]sipp[call_number]
+      [last_Call-ID:]
+      [last_CSeq:]
+      [last_Contact:];expires=28
+      Content-Length: 0
+
+    ]]>
+  </send>
+  
+
+</scenario>

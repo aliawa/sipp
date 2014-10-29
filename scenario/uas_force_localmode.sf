@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE scenario SYSTEM "sipp.dtd">
+
+
+<scenario name="Basic UAS responder">
+  <recv request="INVITE|OPTIONS|REGISTER" crlf="true" regexp_match="true" next="2" test="1">
+    <action>
+      <ereg regexp=".*INVITE" search_in="hdr" header="CSeq:" assign_to="1" />
+    </action>
+  </recv>
+
+
+
+  <send>
+    <![CDATA[
+
+      SIP/2.0 200 OK
+      [last_Via:]
+      [last_From:]
+      [last_To:]
+      [last_Call-ID:]
+      [last_CSeq:]
+      Contact: <sip:[local_ip]:[local_port];transport=[transport]>
+      Content-Length: 0
+
+    ]]>
+  </send>
+
+  <!-- jump here when OPTIONS is received -->
+  
+  <label id="2"/>
+</scenario>
+

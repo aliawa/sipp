@@ -1,0 +1,60 @@
+#!/bin/bash
+
+function usage() {
+    echo 
+    echo " Modifies the data_registrar.csv file"
+    echo " Usage:"
+    echo "   $(basename $0) [options] <password> [Expires][expires]"
+    echo    
+    echo " Options:"
+    echo "   -h  Display this help"
+    echo "   -a  append entry, don't overwrite existing entries"
+    echo 
+    echo " Parameters:"
+    echo "   Expires  Defaults to 3600"
+    echo "   expires  Defaults to Expires"
+    echo 
+}
+
+#
+# Read command line parameters
+#
+if [[ $# -lt 1  || "$1" == "-h" ]]; then
+    usage
+    exit 1
+fi
+if [ "$1" == "-a" ]; then
+    APPEND="1"
+    shift
+fi
+
+
+#
+# Setup Values
+#
+PASSWORD=$1
+EXPIRES_HDR=${2:-3600}
+EXPIRES_FIELD=${3:-$EXPIRES_HDR}
+NONCE=$(openssl passwd NONCE | tr '/' '%')
+
+OUT_FILE=data_registrar.csv
+
+
+#
+# main
+#
+if [ -z "$APPEND" ]; then
+    echo "SEQUENTIAL"    > $OUT_FILE
+fi
+
+echo -n "$PASSWORD;" >> $OUT_FILE
+echo -n "$NONCE;" >> $OUT_FILE
+echo -n "$EXPIRES_HDR;" >> $OUT_FILE
+echo  "$EXPIRES_FIELD"   >> $OUT_FILE
+
+echo
+echo -e "\033[1mdata_registrar.csv\033[0m"
+cat $OUT_FILE
+echo
+
+

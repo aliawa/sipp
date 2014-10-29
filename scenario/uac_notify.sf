@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="ISO-8859-1" ?>
+<!DOCTYPE scenario SYSTEM "sipp.dtd">
+
+<scenario name="Notify Sender">
+
+  <send>
+     <![CDATA[
+        NOTIFY sip:[field1]@[remote_ip]:[remote_port] SIP/2.0
+        Via: SIP/2.0/[transport] [local_ip]:[local_port];branch=[branch]
+        From: [field0] <sip:[field0]@[local_ip]:[local_port]>;tag=[pid]-[call_number]
+        To: <sip:[field1]@[remote_ip]:[remote_port]>
+        Call-ID: [call_id]
+        CSeq: 1 NOTIFY
+        Max-Forwards: 70
+        Event: dialog
+        Content-Length: [len]
+        Content-Type: applicatoin/dialog-info+xml
+
+        <?xml version="1.0"?>
+        <dialog-info xmlns="urn:ietf:params:xml:ns:dialog-info"
+          version="0"
+          state="full"
+          entity="sip:[field0]@[remote_ip]">
+          <dialog id="as7d900as8">
+            <state>trying</state>
+          </dialog>
+        </dialog-info>
+
+     ]]>
+  </send>
+
+  <recv response="200">
+  </recv>
+                              
+</scenario>
+
