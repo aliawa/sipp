@@ -20,7 +20,7 @@ export SPORT1=$SPORT
 export PROXY2_ADDR=10.10.10.149
 
 # Client Address
-export CADDR=$EM_LAN
+export CADDR=192.168.1.13
 export CADDR2=${CADDR%.*}.2
 export CADDR3=${CADDR%.*}.3
 
