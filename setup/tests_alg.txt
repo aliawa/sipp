@@ -64,7 +64,7 @@ sippconfig 1028 1024
 
 
 # Mand configuration transparent mode on PC
-mandconfig $PROXY2_ADDR $PROXY2_PORT
+mandconfig $PROXY2_ADDR $SPORT
 mandclient 1024 $CPORT1
 setvalue alg_defs.conf SIP_TRANSPARENT on
 
@@ -92,20 +92,20 @@ sippconfig 1024 1028 $SADDR $SPORT1
 # NOTE: Transparent mode cannot be done with HOST_DEBUG build, because the 
 # host PC does not pick up the messages that are not destined
 # for it.
-sippconfig 1024 1028 $PROXY2_ADDR $PROXY2_PORT
+sippconfig 1024 1028 $PROXY2_ADDR $SPORT1
 sudo route add -host $PROXY2_ADDR gw $EM_LAN
 sudo route del -host $PROXY2_ADDR
 
 
 
 # UAS 
-../sipp -i $PROXY2_ADDR -p $PROXY2_PORT -sf uas.sf
+../sipp -i $PROXY2_ADDR -p $SPORT1 -sf uas.sf
 
 # UAC OBP mode
 ../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $EM_LAN -sf uac_transparent.sf
 
 # UAC Transparent mode
-../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $PROXY2_ADDR:$PROXY2_PORT -sf uac_transparent.sf
+../sipp -i $CADDR -p $CPORT1 -d 3000 -m 1 -inf data_call.csv  $PROXY2_ADDR:$SPORT1 -sf uac_transparent.sf
 
 
 #--------------------------------------------------------------------------------------------
