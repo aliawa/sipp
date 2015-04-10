@@ -6,8 +6,8 @@
 # C Interface usually used for clients 
 # S Interface usually used for servers 
 #
-export SADDR=`ip addr show dev eth1 | awk '/\<inet\>/ { print substr($2,0,index($2,"/")-1)}'`
-export CADDR=`ip addr show dev eth0 | awk '/\<inet\>/ { print substr($2,0,index($2,"/")-1)}'`
+export SADDR=`ifconfig eth1 | awk -F "[: \t]+" '/inet addr:/ {print $4}'`
+export CADDR=`ifconfig eth0 | awk -F "[: \t]+" '/inet addr:/ {print $4}'`
 # ----------------------------------------------
 # Additional address required by some scenarios
 # Create the interfaces first and then assign 

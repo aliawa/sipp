@@ -4,6 +4,10 @@
 # Environment
 #
 
+# Edgemarc under test LAN/WAN address
+export EM_LAN=`ifconfig eth0 | awk '/^ *inet / {print $2}'`
+export EM_WAN=`ifconfig eth1 | awk '/^ *inet / {print $2}'`
+
 # Base ports on 'S' and 'C' interface
 export SPORT=5080
 export CPORT=5080
@@ -16,7 +20,7 @@ export SPORT1=$SPORT
 export PROXY2_ADDR=10.10.10.149
 
 # Client Address
-export CADDR=192.168.1.193
+export CADDR=$EM_LAN
 export CADDR2=${CADDR%.*}.2
 export CADDR3=${CADDR%.*}.3
 
@@ -25,10 +29,6 @@ export CPORT2=$((CPORT+10))
 export CPORT3=$((CPORT+20))
 export CPORT4=$((CPORT+30))
 
-
-# Edgemarc under test LAN/WAN address
-export EM_LAN=`ifconfig eth0 | awk '/^ *inet / {print $2}'`
-export EM_WAN=`ifconfig eth1 | awk '/^ *inet / {print $2}'`
 
 
 
