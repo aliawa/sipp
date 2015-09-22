@@ -7,7 +7,7 @@
 # S Interface usually used for servers 
 #
 export SADDR=`ifconfig eth1 | awk -F "[: \t]+" '/inet addr:/ {print $4}'`
-export CADDR=`ifconfig eth0 | awk -F "[: \t]+" '/inet addr:/ {print $4}'`
+export CADDR=`ifconfig eth1 | awk -F "[: \t]+" '/inet addr:/ {print $4}'`
 # ----------------------------------------------
 # Additional address required by some scenarios
 # Create the interfaces first and then assign 
@@ -50,8 +50,8 @@ export EM_WAN=
 # machine as CADDR other wise the packets will just
 # go to the loopback interface.
 # 
-export PROXY2_ADDR=10.10.10.149 
-export PROXY2_PORT=5080
+export PROXY_ADDR=10.10.10.149 
+export PROXY_PORT=5080
 
 
 
