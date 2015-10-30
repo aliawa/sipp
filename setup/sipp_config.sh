@@ -79,5 +79,13 @@ sippconfig() {
     echo >> data_call.csv 
 }
 
-
-
+shconfig() {
+cat << ENDOUT
+    SADDR:  $SADDR
+    SPORT1: $SPORT1
+    CADDR:  $CADDR
+    CPORT1: $CPORT
+    EM_LAN: $EM_LAN
+    EM_WAN: $EM_WAN
+ENDOUT
+} 
