@@ -22,18 +22,18 @@ EM_ADDR=
 usage()
 {
     echo 
-    echo "Usage:"
-    echo "$(basename $0) options"
-    echo "  OPTION                OPTIONAL DEFAULT"
-    echo "  -m <uac|uas>          no" 
-    echo "  -u <local-user>       yes       1024"
-    echo "  -r <remote-user>      yes       1028"
-    echo "  -i <local-address>    no"
-    echo "  -p <local-port>                 5080"
-    echo "  -d <reomote-address>  for uas"
-    echo "  -t <tcp|udp>          yes       udp"
-    echo "  -o <reomote-port>     yes       5080"
-    echo "  -r <recv|send>        yes       none" 
+    echo "Usage as UAS:"
+    echo "  $(basename $0) -m uas -i <local-address> [options]"
+    echo "Usage as UAC:"
+    echo "  $(basename $0) -m uac -i <local-address> -d <remote-address> [options]"
+    echo
+    echo "OPTIONS:"
+    echo "  -u <local-user>       default: 1024"
+    echo "  -r <remote-user>      default: 1028"
+    echo "  -p <local-port>       default: 5080"
+    echo "  -t <tcp|udp>          default: udp"
+    echo "  -o <reomote-port>     default: 5080"
+    echo "  -r <recv|send>        default: none" 
     echo
 }
 
@@ -126,7 +126,7 @@ register_uas() {
 # -------------------------------------
 
 # Process options
-while getopts r:m:u:i:p:d:r:t:? option
+while getopts hr:m:u:i:p:d:r:t:? option
 do
     case "$option" in
         u) USERNAME=$OPTARG
@@ -139,6 +139,7 @@ do
         o) RPROT=$OPTARG;;
         t) [ "$OPTARG" == "tcp" ] && TRANSPORT="t1" ;;
         r) REGISTER=$OPTARG;;
+        h) usage; exit;;
         *) echo "Invalid option" 
            usage
            exit 1;;
