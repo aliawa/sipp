@@ -23,17 +23,16 @@ usage()
 {
     echo 
     echo "Usage as UAS:"
-    echo "  $(basename $0) -m uas -i <local-address> [options]"
+    echo "  $(basename $0) -m uas -i <local-ip> [options]"
     echo "Usage as UAC:"
-    echo "  $(basename $0) -m uac -i <local-address> -d <remote-address> [options]"
+    echo "  $(basename $0) -m uac -i <local-ip> -d <remote-ip[:port]> [options]"
     echo
     echo "OPTIONS:"
-    echo "  -u <local-user>       default: 1024"
-    echo "  -r <remote-user>      default: 1028"
-    echo "  -p <local-port>       default: 5080"
-    echo "  -t <tcp|udp>          default: udp"
-    echo "  -o <reomote-port>     default: 5080"
     echo "  -r <recv|send>        default: none" 
+    echo "  -t <tcp|udp>          default: udp"
+    echo "  -u <local-user>       default: 1024"
+    echo "  -p <local-port>       default: 5080"
+    echo "  -r <remote-user>      default: 1028"
     echo
 }
 
@@ -66,7 +65,9 @@ verify_options() {
 
 
 start_uas() {
-    $SIPP -i $LADDR -p $LPORT -sf uas.sf
+    $SIPP -i $LADDR -p $LPORT \
+        -t $TRANSPORT \
+        -sf uas.sf
 }
 
 
