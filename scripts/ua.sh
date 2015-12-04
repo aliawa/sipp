@@ -72,9 +72,10 @@ start_uas() {
 
 
 start_uac() {
-    $SIPP -i $LADDR -p $LPORT -d 2000 -m 1 -r 17 -inf data_call.csv $EM_ADDR \
+    $SIPP -i $LADDR -p $LPORT -d 2000 -m 1 -r 17 -inf data_call.csv \
         -t $TRANSPORT \
-        -sf uac.sf
+        -sf uac.sf \
+        $EM_ADDR
 }
 
 
