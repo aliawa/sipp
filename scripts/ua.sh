@@ -68,14 +68,14 @@ verify_options() {
 start_uas() {
     $SIPP -i $LADDR -p $LPORT \
         -t $TRANSPORT \
-        -sf uas.sf
+        -sf $SCENARIOS/uas.sf
 }
 
 
 start_uac() {
     $SIPP -i $LADDR -p $LPORT -d 2000 -m 1 -r 17 -inf data_call.csv \
         -t $TRANSPORT \
-        -sf uac.sf \
+        -sf $SCENARIOS/uac.sf \
         $EM_ADDR
 }
 
@@ -98,7 +98,7 @@ set_register_uas() {
 
 register_uac() {
     $SIPP_SSL -i $LADDR  -p $LPORT -m 1 -inf data_reg.csv $EM_ADDR \
-        -sf uac_register.sf \
+        -sf $SCENARIOS/uac_register.sf \
         -t $TRANSPORT
 
     if [ "$?" -ne "0" ]; then 
