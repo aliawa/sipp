@@ -1,7 +1,8 @@
 #!/bin/bash
 
 
-SPATH="~/workspace/sipp/scripts"
+SPATH="$HOME/workspace/sipp/scripts"
+SCENARIOS="$HOME/workspace/sipp/scenario"
 SIPP=../sipp_ssl
 SIPP_SSL=../sipp_ssl
 
@@ -28,10 +29,10 @@ usage()
     echo "  $(basename $0) -m uac -i <local-ip> -d <remote-ip[:port]> [options]"
     echo
     echo "OPTIONS:"
-    echo "  -r <recv|send>        default: none" 
+    echo "  -p <local-port>       default: 5080"
+    echo "  -r <recv|send>        send/receive REGISTER  default:neither" 
     echo "  -t <tcp|udp>          default: udp"
     echo "  -u <local-user>       default: 1024"
-    echo "  -p <local-port>       default: 5080"
     echo "  -r <remote-user>      default: 1028"
     echo
 }
@@ -110,7 +111,7 @@ register_uac() {
 
 register_uas() {
     $SIPP_SSL -i $LADDR  -p $LPORT -m 1 -inf data_registrar.csv \
-        -sf uas_register.sf \
+        -sf $SCENARIOS/uas_register.sf \
         -t $TRANSPORT
 
     if [ "$?" -ne "0" ]; then 
