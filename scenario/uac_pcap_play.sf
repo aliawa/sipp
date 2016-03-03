@@ -33,9 +33,11 @@
       s=-
       c=IN IP[media_ip_type] [media_ip]
       t=0 0
-      m=audio [media_port] RTP/AVP 0
+      m=audio [media_port] RTP/AVP 0 8 18 101
       a=rtpmap:0 PCMU/8000
-      x-my=0
+      a=rtpmap:8 PCMA/8000
+      a=rtpmap:18 G729/8000
+      a=rtpmap:101 telephone-event/8000
 
     ]]>
   </send>
