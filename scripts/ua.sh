@@ -1,15 +1,16 @@
 #!/bin/bash
 
 
-SPATH="$HOME/workspace/sipp/scripts"
-SCENARIOS="$HOME/workspace/sipp/scenario"
-SIPP=../sipp_ssl
-SIPP_SSL=../sipp_ssl
+SIPPDIR="$HOME/workspace/sipp"
+SPATH="$SIPPDIR/scripts"
+SCENARIOS="$SIPPDIR/scenario"
+SIPP=$SIPPDIR/sipp_ssl
+SIPP_SSL=$SIPPDIR/sipp_ssl
 
 USERNAME="1024"
 PASSWORD="password"
-LPORT=5080
-RPROT=5080
+LPORT=5060
+RPROT=5060
 EXPIRES=3600
 AUTH_USER=$USERNAME
 RUSER="1028"
@@ -29,7 +30,7 @@ usage()
     echo "  $(basename $0) -m uac -i <local-ip> -d <remote-ip[:port]> [options]"
     echo
     echo "OPTIONS:"
-    echo "  -p <local-port>       default: 5080"
+    echo "  -p <local-port>       default: $LPORT"
     echo "  -r <recv|send>        send/receive REGISTER  default:neither" 
     echo "  -t <tcp|udp>          default: udp"
     echo "  -u <local-user>       default: 1024"
