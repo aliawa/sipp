@@ -19,7 +19,8 @@ MODE=
 REGISTER=
 LADDR=
 EM_ADDR=
-
+RTPECHO=""
+UACSF="uac.sf"
 
 usage()
 {
@@ -35,6 +36,7 @@ usage()
     echo "  -t <tcp|udp>          default: udp"
     echo "  -u <local-user>       default: 1024"
     echo "  -r <remote-user>      default: 1028"
+    echo "  -a                    send/echo rtp"
     echo
 }
 
@@ -68,7 +70,7 @@ verify_options() {
 
 start_uas() {
     $SIPP -i $LADDR -p $LPORT \
-        -t $TRANSPORT \
+        -t $TRANSPORT $RTP \
         -sf $SCENARIOS/uas.sf
 }
 
@@ -76,7 +78,7 @@ start_uas() {
 start_uac() {
     $SIPP -i $LADDR -p $LPORT -d 2000 -m 1 -r 17 -inf data_call.csv \
         -t $TRANSPORT \
-        -sf $SCENARIOS/uac.sf \
+        -sf $SCENARIOS/$UACSF
         $EM_ADDR
 }
 
@@ -130,7 +132,7 @@ register_uas() {
 # -------------------------------------
 
 # Process options
-while getopts hr:m:u:i:p:d:r:t:? option
+while getopts hr:m:u:i:p:d:r:t:a? option
 do
     case "$option" in
         u) USERNAME=$OPTARG
@@ -143,6 +145,7 @@ do
         o) RPROT=$OPTARG;;
         t) [ "$OPTARG" == "tcp" ] && TRANSPORT="t1" ;;
         r) REGISTER=$OPTARG;;
+        a) RTPECHO="-rtpecho"; UACSF="uac_pcap_play.sf" ;;
         h) usage; exit;;
         *) echo "Invalid option" 
            usage
