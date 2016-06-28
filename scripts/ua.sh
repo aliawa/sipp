@@ -78,7 +78,7 @@ start_uas() {
 start_uac() {
     $SIPP -i $LADDR -p $LPORT -d 2000 -m 1 -r 17 -inf data_call.csv \
         -t $TRANSPORT \
-        -sf $SCENARIOS/$UACSF
+        -sf $SCENARIOS/$UACSF \
         $EM_ADDR
 }
 
