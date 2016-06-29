@@ -70,7 +70,7 @@ verify_options() {
 
 start_uas() {
     $SIPP -i $LADDR -p $LPORT \
-        -t $TRANSPORT $RTP \
+        -t $TRANSPORT $RTPECHO \
         -sf $SCENARIOS/uas.sf
 }
 
@@ -145,7 +145,7 @@ do
         o) RPROT=$OPTARG;;
         t) [ "$OPTARG" == "tcp" ] && TRANSPORT="t1" ;;
         r) REGISTER=$OPTARG;;
-        a) RTPECHO="-rtpecho"; UACSF="uac_pcap_play.sf" ;;
+        a) RTPECHO="-rtp_echo"; UACSF="uac_pcap_play.sf" ;;
         h) usage; exit;;
         *) echo "Invalid option" 
            usage
