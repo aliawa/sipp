@@ -6,6 +6,8 @@ SPATH="$SIPPDIR/scripts"
 SCENARIOS="$SIPPDIR/scenario"
 SIPP=$SIPPDIR/sipp_ssl
 SIPP_SSL=$SIPPDIR/sipp_ssl
+SIPP_OPT=""
+
 
 USERNAME="1024"
 PASSWORD="password"
@@ -22,6 +24,7 @@ EM_ADDR=
 RTPECHO=""
 UACSF="uac.sf"
 
+
 usage()
 {
     echo 
@@ -34,10 +37,14 @@ usage()
     echo "  -p <local-port>       default: $LPORT"
     echo "  -r <recv|send>        send/receive REGISTER  default:neither" 
     echo "  -t <tcp|udp>          default: udp"
+    echo "  -a                    send/echo rtp"
+    echo "  -o <sipp option>      sipp option in quotes"
+    echo
+    echo "MORE OPTIONS:"
     echo "  -u <local-user>       default: 1024"
     echo "  -r <remote-user>      default: 1028"
-    echo "  -a                    send/echo rtp"
-    echo
+    echo "  -h                    display help"
+    echo 
 }
 
 
@@ -71,6 +78,7 @@ verify_options() {
 start_uas() {
     $SIPP -i $LADDR -p $LPORT \
         -t $TRANSPORT $RTP \
+        $SIPP_OPT \
         -sf $SCENARIOS/uas.sf
 }
 
@@ -78,7 +86,7 @@ start_uas() {
 start_uac() {
     $SIPP -i $LADDR -p $LPORT -d 2000 -m 1 -r 17 -inf data_call.csv \
         -t $TRANSPORT \
-        -sf $SCENARIOS/$UACSF \
+        -sf $SCENARIOS/$UACSF $SIPP_OPT \
         $EM_ADDR
 }
 
@@ -102,7 +110,7 @@ set_register_uas() {
 register_uac() {
     $SIPP_SSL -i $LADDR  -p $LPORT -m 1 -inf data_reg.csv $EM_ADDR \
         -sf $SCENARIOS/uac_register.sf \
-        -t $TRANSPORT
+        -t $TRANSPORT $SIPP_OPT
 
     if [ "$?" -ne "0" ]; then 
         echo "registeration failed"
@@ -115,7 +123,7 @@ register_uac() {
 register_uas() {
     $SIPP_SSL -i $LADDR  -p $LPORT -m 1 -inf data_registrar.csv \
         -sf $SCENARIOS/uas_register.sf \
-        -t $TRANSPORT
+        -t $TRANSPORT $SIPP_OPT 
 
     if [ "$?" -ne "0" ]; then 
         echo "registeration failed"
@@ -132,7 +140,7 @@ register_uas() {
 # -------------------------------------
 
 # Process options
-while getopts hr:m:u:i:p:d:r:t:a? option
+while getopts hr:m:u:i:p:d:r:t:ao:? option
 do
     case "$option" in
         u) USERNAME=$OPTARG
@@ -142,10 +150,10 @@ do
         p) LPORT=$OPTARG;;
         v) RUSER=$OPTARG;;
         d) EM_ADDR=$OPTARG;;
-        o) RPROT=$OPTARG;;
         t) [ "$OPTARG" == "tcp" ] && TRANSPORT="t1" ;;
         r) REGISTER=$OPTARG;;
         a) RTPECHO="-rtpecho"; UACSF="uac_pcap_play.sf" ;;
+        o) SIPP_OPT=$OPTARG;;
         h) usage; exit;;
         *) echo "Invalid option" 
            usage
