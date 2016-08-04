@@ -152,7 +152,7 @@ do
         d) EM_ADDR=$OPTARG;;
         t) [ "$OPTARG" == "tcp" ] && TRANSPORT="t1" ;;
         r) REGISTER=$OPTARG;;
-        a) RTPECHO="-rtpecho"; UACSF="uac_pcap_play.sf" ;;
+        a) RTPECHO="-rtp_echo"; UACSF="uac_pcap_play.sf" ;;
         o) SIPP_OPT=$OPTARG;;
         h) usage; exit;;
         *) echo "Invalid option" 
