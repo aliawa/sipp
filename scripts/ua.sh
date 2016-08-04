@@ -42,7 +42,6 @@ usage()
     echo
     echo "MORE OPTIONS:"
     echo "  -u <local-user>       default: 1024"
-    echo "  -r <remote-user>      default: 1028"
     echo "  -h                    display help"
     echo 
 }
@@ -140,7 +139,7 @@ register_uas() {
 # -------------------------------------
 
 # Process options
-while getopts hr:m:u:i:p:d:r:t:ao:? option
+while getopts hr:m:u:i:p:d:t:ao:? option
 do
     case "$option" in
         u) USERNAME=$OPTARG
@@ -148,7 +147,6 @@ do
         m) MODE=$OPTARG;;
         i) LADDR=$OPTARG;;
         p) LPORT=$OPTARG;;
-        v) RUSER=$OPTARG;;
         d) EM_ADDR=$OPTARG;;
         t) [ "$OPTARG" == "tcp" ] && TRANSPORT="t1" ;;
         r) REGISTER=$OPTARG;;
