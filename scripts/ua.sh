@@ -23,6 +23,7 @@ LADDR=
 EM_ADDR=
 RTPECHO=""
 UACSF="uac.sf"
+SHOWCMD=0
 
 
 usage()
@@ -39,6 +40,7 @@ usage()
     echo "  -t <tcp|udp>          default: udp"
     echo "  -a                    send/echo rtp"
     echo "  -o <sipp option>      sipp option in quotes"
+    echo "  -c                    Show command"
     echo
     echo "MORE OPTIONS:"
     echo "  -u <local-user>       default: 1024"
@@ -75,18 +77,19 @@ verify_options() {
 
 
 start_uas() {
-    $SIPP -i $LADDR -p $LPORT \
+    CMD="$SIPP -i $LADDR -p $LPORT \
         -t $TRANSPORT $RTP \
         $SIPP_OPT \
-        -sf $SCENARIOS/uas.sf
+        -sf $SCENARIOS/uas.sf"
+    [ $SHOWCMD -eq 1 ] && echo $CMD || $CMD
 }
 
-
 start_uac() {
-    $SIPP -i $LADDR -p $LPORT -d 2000 -m 1 -r 17 -inf data_call.csv \
+    CMD="$SIPP -i $LADDR -p $LPORT -d 2000 -m 1 -r 17 -inf data_call.csv \
         -t $TRANSPORT \
         -sf $SCENARIOS/$UACSF $SIPP_OPT \
-        $EM_ADDR
+        $EM_ADDR"
+    [ $SHOWCMD -eq 1 ] && echo $CMD || $CMD
 }
 
 
@@ -107,26 +110,37 @@ set_register_uas() {
 
 
 register_uac() {
-    $SIPP_SSL -i $LADDR  -p $LPORT -m 1 -inf data_reg.csv $EM_ADDR \
+    CMD="$SIPP_SSL -i $LADDR  -p $LPORT -m 1 -inf data_reg.csv $EM_ADDR \
         -sf $SCENARIOS/uac_register.sf \
         -t $TRANSPORT $SIPP_OPT
 
-    if [ "$?" -ne "0" ]; then 
-        echo "registeration failed"
-        exit
+    if [ $SHOWCMD -eq 1 ]; then
+        $CMD
+        if [ "$?" -ne "0" ]; then 
+            echo "registeration failed"
+            exit
+        fi
+    else
+        echo $CMD
     fi
 
 }
 
 
 register_uas() {
-    $SIPP_SSL -i $LADDR  -p $LPORT -m 1 -inf data_registrar.csv \
+    CMD="$SIPP_SSL -i $LADDR  -p $LPORT -m 1 -inf data_registrar.csv \
         -sf $SCENARIOS/uas_register.sf \
         -t $TRANSPORT $SIPP_OPT 
 
-    if [ "$?" -ne "0" ]; then 
-        echo "registeration failed"
-        exit
+    if [ $SHOWCMD -eq 1 ]; then
+        $CMD
+
+        if [ "$?" -ne "0" ]; then 
+            echo "registeration failed"
+            exit
+        fi
+    else
+        echo $CMD
     fi
 }
 
@@ -139,7 +153,7 @@ register_uas() {
 # -------------------------------------
 
 # Process options
-while getopts hr:m:u:i:p:d:t:ao:? option
+while getopts hr:m:u:i:p:d:t:aoc? option
 do
     case "$option" in
         u) USERNAME=$OPTARG
@@ -152,6 +166,7 @@ do
         r) REGISTER=$OPTARG;;
         a) RTPECHO="-rtp_echo"; UACSF="uac_pcap_play.sf" ;;
         o) SIPP_OPT=$OPTARG;;
+        c) SHOWCMD=1;;
         h) usage; exit;;
         *) echo "Invalid option" 
            usage
