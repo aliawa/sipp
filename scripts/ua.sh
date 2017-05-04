@@ -112,9 +112,9 @@ set_register_uas() {
 register_uac() {
     CMD="$SIPP_SSL -i $LADDR  -p $LPORT -m 1 -inf data_reg.csv $EM_ADDR \
         -sf $SCENARIOS/uac_register.sf \
-        -t $TRANSPORT $SIPP_OPT
+        -t $TRANSPORT $SIPP_OPT"
 
-    if [ $SHOWCMD -eq 1 ]; then
+    if [ $SHOWCMD -ne 1 ]; then
         $CMD
         if [ "$?" -ne "0" ]; then 
             echo "registeration failed"
@@ -130,9 +130,9 @@ register_uac() {
 register_uas() {
     CMD="$SIPP_SSL -i $LADDR  -p $LPORT -m 1 -inf data_registrar.csv \
         -sf $SCENARIOS/uas_register.sf \
-        -t $TRANSPORT $SIPP_OPT 
+        -t $TRANSPORT $SIPP_OPT" 
 
-    if [ $SHOWCMD -eq 1 ]; then
+    if [ $SHOWCMD -ne 1 ]; then
         $CMD
 
         if [ "$?" -ne "0" ]; then 
