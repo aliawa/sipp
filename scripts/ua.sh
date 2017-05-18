@@ -80,7 +80,8 @@ start_uas() {
     CMD="$SIPP -i $LADDR -p $LPORT \
         -t $TRANSPORT $RTP \
         $SIPP_OPT \
-        -sf $SCENARIOS/uas.sf"
+        -sf $SCENARIOS/uas.sf \
+        $RTPECHO"
     [ $SHOWCMD -eq 1 ] && echo $CMD || $CMD
 }
 
