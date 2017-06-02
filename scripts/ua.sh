@@ -1,6 +1,6 @@
 #!/bin/bash
 
-
+# Constants
 SIPPDIR="$HOME/workspace/sipp"
 SPATH="$SIPPDIR/scripts"
 SCENARIOS="$SIPPDIR/scenario"
@@ -8,7 +8,7 @@ SIPP=$SIPPDIR/sipp_ssl
 SIPP_SSL=$SIPPDIR/sipp_ssl
 SIPP_OPT=""
 
-
+# Configured
 USERNAME="1024"
 PASSWORD="password"
 LPORT=5060
@@ -22,15 +22,18 @@ REGISTER=
 LADDR=
 EM_ADDR=
 RTPECHO=""
-UACSF="uac.sf"
 SHOWCMD=0
+
+# Internal
+UACSF="uac.sf"
+MOPT=""
 
 
 usage()
 {
     echo 
     echo "Usage as UAS:"
-    echo "  $(basename $0) -m uas -i <local-ip> [options]"
+    echo "  $(basename $0) -m uas|reg -i <local-ip> [options]"
     echo "Usage as UAC:"
     echo "  $(basename $0) -m uac -i <local-ip> -d <remote-ip[:port]> [options]"
     echo
@@ -105,6 +108,7 @@ set_register_uac() {
 }
 
 set_register_uas() {
+    [ $1 == "1" ] && MOPT="-m 1"
     $SPATH/set_uas_register $PASSWORD 
 }
 
@@ -129,7 +133,7 @@ register_uac() {
 
 
 register_uas() {
-    CMD="$SIPP_SSL -i $LADDR  -p $LPORT -m 1 -inf data_registrar.csv \
+    CMD="$SIPP_SSL -i $LADDR  -p $LPORT $MOPT -inf data_registrar.csv \
         -sf $SCENARIOS/uas_register.sf \
         -t $TRANSPORT $SIPP_OPT" 
 
@@ -176,22 +180,26 @@ do
 done
 
 verify_options
+
 if [ "$REGISTER" == "send" ];then
     set_register_uac
     register_uac
 elif [ "$REGISTER" == "recv" ];then
-    set_register_uas
+    set_register_uas 1
     register_uas
 fi
 
 
-set_call
 
 if [[ "$MODE" == "uac" ]]; then
+    set_call
     sleep 1
     start_uac
 elif [[ "$MODE" == "uas" ]]; then
     start_uas
+elif [[ "$MODE" == "reg" ]]; then
+    set_register_uas
+    register_uas
 fi
 
 
