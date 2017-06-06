@@ -6,13 +6,12 @@ SPATH="$SIPPDIR/scripts"
 SCENARIOS="$SIPPDIR/scenario"
 SIPP=$SIPPDIR/sipp_ssl
 SIPP_SSL=$SIPPDIR/sipp_ssl
-SIPP_OPT=""
+TMPDIR=$HOME/tmp
 
 # Configured
 USERNAME="1024"
 PASSWORD="password"
 LPORT=5060
-RPROT=5060
 EXPIRES=3600
 AUTH_USER=$USERNAME
 RUSER="1028"
@@ -25,9 +24,9 @@ RTPECHO=""
 SHOWCMD=0
 
 # Internal
+SIPP_OPT=""
 UACSF="uac.sf"
 MOPT=""
-
 
 usage()
 {
@@ -89,7 +88,7 @@ start_uas() {
 }
 
 start_uac() {
-    CMD="$SIPP -i $LADDR -p $LPORT -d 2000 -m 1 -r 17 -inf data_call.csv \
+    CMD="$SIPP -i $LADDR -p $LPORT -d 2000 -m 1 -r 17 -inf $TMPDIR/data_call.csv \
         -t $TRANSPORT \
         -sf $SCENARIOS/$UACSF $SIPP_OPT \
         $EM_ADDR"
@@ -98,24 +97,24 @@ start_uac() {
 
 
 set_call() {
-    echo "SEQUENTIAL" > data_call.csv
-    echo "$USERNAME;$RUSER" >> data_call.csv
+    echo "SEQUENTIAL" > $TMPDIR/data_call.csv
+    echo "$USERNAME;$RUSER" >> $TMPDIR/data_call.csv
 }
 
 
 set_register_uac() {
-    $SPATH/set_uac_register $USERNAME $PASSWORD $RPROT
+    $SPATH/set_uac_register -d $TMPDIR $USERNAME $PASSWORD 
 }
 
 set_register_uas() {
     [ $1 == "1" ] && MOPT="-m 1"
-    $SPATH/set_uas_register $PASSWORD 
+    $SPATH/set_uas_register -d $TMPDIR $PASSWORD 
 }
 
 
 
 register_uac() {
-    CMD="$SIPP_SSL -i $LADDR  -p $LPORT -m 1 -inf data_reg.csv $EM_ADDR \
+    CMD="$SIPP_SSL -i $LADDR  -p $LPORT -m 1 -inf $TMPDIR/data_reg.csv $EM_ADDR \
         -sf $SCENARIOS/uac_register.sf \
         -t $TRANSPORT $SIPP_OPT"
 
@@ -133,7 +132,7 @@ register_uac() {
 
 
 register_uas() {
-    CMD="$SIPP_SSL -i $LADDR  -p $LPORT $MOPT -inf data_registrar.csv \
+    CMD="$SIPP_SSL -i $LADDR  -p $LPORT $MOPT -inf $TMPDIR/data_registrar.csv \
         -sf $SCENARIOS/uas_register.sf \
         -t $TRANSPORT $SIPP_OPT" 
 

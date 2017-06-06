@@ -2,15 +2,33 @@
 
 function usage() {
     echo 
-    echo " Modifies the data_reg.csv file"
+    echo "Creates $DIR/data_reg.csv file for uac_register.sf"
     echo " Usage:"
-    echo "   $(basename $0) <username> <password> <port> [expires] [auth_user]"
+    echo "   $(basename $0) <username> <password> [expires] [auth_user]"
     echo    
-    echo
+    echo " Options:"
+    echo "   -h  Display this help"
+    echo "   -d  Directory for the target file. Default: Current directory"
+    echo 
+    echo " Parameters:"
+    echo "   expires  Defaults to 3600"
+    echo "   auth_user  Defaults to <username>"
+    echo 
 }
 
+#
+# Read command line parameters
+#
+DIR="."
+if [[ "$1" =~ -[^d] ]]; then
+    usage
+    exit 1
+elif [ "$1" == "-d" ]; then
+    DIR=$2
+    shift 2
+fi
 
-if [ $# -lt 3 ]; then
+if [ $# -lt 2 ]; then
     usage
     exit 1
 fi
@@ -18,21 +36,19 @@ fi
 
 USERNAME=$1
 PASSWORD=$2
-PORT=$3
-EXPIRES=${4:-3600}
-AUTH_USER=${5:-$USERNAME}
+EXPIRES=${3:-3600}
+AUTH_USER=${4:-$USERNAME}
 
 
 
-echo "SEQUENTIAL"    > data_reg.csv
-echo -n "$USERNAME;" >> data_reg.csv
-echo -n "[authentication username=$AUTH_USER password=$PASSWORD];" >> data_reg.csv
-echo -n "$PORT;"   >> data_reg.csv
-echo  "$EXPIRES" >> data_reg.csv
+echo "SEQUENTIAL"    > $DIR/data_reg.csv
+echo -n "$USERNAME;" >> $DIR/data_reg.csv
+echo -n "[authentication username=$AUTH_USER password=$PASSWORD];" >> $DIR/data_reg.csv
+echo  "$EXPIRES" >> $DIR/data_reg.csv
 
 echo
-echo -e "\033[1mdata_reg.csv\033[0m"
-cat data_reg.csv
+echo -e "\033[1m$DIR/data_reg.csv\033[0m"
+cat $DIR/data_reg.csv
 echo
 
 

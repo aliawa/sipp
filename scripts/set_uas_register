@@ -9,6 +9,7 @@ function usage() {
     echo " Options:"
     echo "   -h  Display this help"
     echo "   -a  append entry, don't overwrite existing entries"
+    echo "   -d  target file directory"
     echo 
     echo " Parameters:"
     echo "   Expires  Defaults to 3600"
@@ -19,13 +20,22 @@ function usage() {
 #
 # Read command line parameters
 #
-if [[ $# -lt 1  || "$1" == "-h" ]]; then
+while getopts had:? option
+do
+    case "$option" in
+        a) APPEND=1;;
+        d) DIR=$OPTARG;;
+        h) usage; exit;;
+        *) echo "Invalid option" 
+           usage
+           exit 1;;
+    esac
+done
+
+shift $((OPTIND-1))
+if [[ $# < 1 ]]; then 
     usage
     exit 1
-fi
-if [ "$1" == "-a" ]; then
-    APPEND="1"
-    shift
 fi
 
 
@@ -37,7 +47,7 @@ EXPIRES_HDR=${2:-3600}
 EXPIRES_FIELD=${3:-$EXPIRES_HDR}
 NONCE=$(openssl passwd NONCE | tr '/' '%')
 
-OUT_FILE=data_registrar.csv
+OUT_FILE=${DIR-.}/data_registrar.csv
 
 
 #
