@@ -39,7 +39,7 @@ usage()
     echo "OPTIONS:"
     echo "  -p <local-port>       default: $LPORT"
     echo "  -r <recv|send>        send/receive REGISTER  default:neither" 
-    echo "  -t <tcp|udp>          default: udp"
+    echo "  -t <tcp|udp|tls>      default: udp"
     echo "  -a                    send/echo rtp"
     echo "  -o <sipp option>      sipp option in quotes"
     echo "  -c                    Show command"
@@ -149,6 +149,14 @@ register_uas() {
 }
 
 
+settransport() {
+    case $1 in 
+        "tcp") TRANSPORT=t1;;
+        "udp") TRANSPORT=u1;;
+        "tls") TRANSPORT="l1 -tls_cert $SCENARIOS/cacert.pem -tls_key $SCENARIOS/cakey.pem";;
+    esac
+}
+
 
 # -------------------------------------
 #
@@ -166,7 +174,7 @@ do
         i) LADDR=$OPTARG;;
         p) LPORT=$OPTARG;;
         d) EM_ADDR=$OPTARG;;
-        t) [ "$OPTARG" == "tcp" ] && TRANSPORT="t1" ;;
+        t) settransport $OPTARG;;
         r) REGISTER=$OPTARG;;
         a) RTPECHO="-rtp_echo"; UACSF="uac_pcap_play.sf" ;;
         o) SIPP_OPT=$OPTARG;;
