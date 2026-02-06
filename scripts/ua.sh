@@ -1,20 +1,15 @@
 #!/bin/bash
 
-
-
 # Constants
-#SIPPDIR="$HOME/workspace/sipp"
-SIPPDIR="/home/aawais/workspace/sipp"
-SPATH="$SIPPDIR/scripts"
-SCENARIOS="$SIPPDIR/scenario"
-#SIPP=$SIPPDIR/sipp_ssl
+SIPP_DIR="/home/aawais/workspace/sipp"
+SCRIPTS_DIR="$SIPP_DIR/scripts"
+SCENARIO_DIR="$SIPP_DIR/scenario"
+# SIPP=$SIPP_DIR/sipp_ssl
 SIPP=sipp
-#SIPP_SSL=$SIPPDIR/sipp_ssl
-SIPP_SSL=sipp
-TMPDIR=/home/aawais/tmp
-#TMPDIR=$HOME/tmp
+TMP_DIR=/home/aawais/tmp
 
-# Configured
+
+# Fixed Configuration
 USERNAME="1024"
 PASSWORD="password"
 LPORT=5060
@@ -22,15 +17,16 @@ EXPIRES=3600
 AUTH_USER=$USERNAME
 RUSER="1028"
 TRANSPORT="u1"
+
+# External Parameters
 MODE=
-REGISTER=
 LADDR=
-EM_ADDR=
-RTPECHO=""
+SIPSRVR=
 SHOWCMD=0
+SIPP_OPT=""
 
 # Internal
-SIPP_OPT=""
+RTPECHO=""
 UACSF="uac.sf"
 UASSF="uas.sf"
 MOPT=""
@@ -45,7 +41,6 @@ usage()
     echo
     echo "OPTIONS:"
     echo "  -p <local-port>       default: $LPORT"
-    # echo "  -r <recv|send>        send/receive REGISTER  default:neither" 
     echo "  -t <tcp|udp|tls>      default: udp"
     echo "  -a <send/recv>        send/echo rtp"
     echo "  -o <sipp option>      sipp option in quotes"
@@ -65,19 +60,10 @@ verify_options() {
         exit 1
     fi
 
-    if [[ -n "$REGISTER" ]]; then
-        if [[ "$REGISTER" != "send" && "$REGISTER" != "recv" ]]; then
-            echo "Invalid register option"
-            usage
+    if [[ "$MODE" == "uac_reg" || "$MODE" == "uac" ]]; then
+        if [[ -z $SIPSRVR ]]; then
+            echo "Remote address must be provided with UAC"
             exit 1
-        fi
-    fi
-
-    if [[ "$REGISTER" == "send" || "$MODE" == "uac" ]]; then
-        if [[ -z $EM_ADDR ]]; then
-            echo "Remote address must be provided with register send"
-            echo "or UAC"
-            exit
         fi
     fi
 }
@@ -89,42 +75,42 @@ start_uas() {
     CMD="$SIPP -i $LADDR -p $LPORT \
         -t $TRANSPORT $RTP \
         $SIPP_OPT \
-        -sf $SCENARIOS/$UASSF \
+        -sf $SCENARIO_DIR/$UASSF \
         $RTPECHO"
     [ $SHOWCMD -eq 1 ] && echo $CMD || $CMD
 }
 
 start_uac() {
-    CMD="$SIPP -i $LADDR -p $LPORT -d 2000 -m 1 -r 17 -inf $TMPDIR/data_call.csv \
+    CMD="$SIPP -i $LADDR -p $LPORT -d 2000 -m 1 -r 17 -inf $TMP_DIR/data_call.csv \
         -t $TRANSPORT \
-        -sf $SCENARIOS/$UACSF \
+        -sf $SCENARIO_DIR/$UACSF \
         $RTPECHO \
         $SIPP_OPT \
-        $EM_ADDR"
+        $SIPSRVR"
     [ $SHOWCMD -eq 1 ] && echo $CMD || $CMD
 }
 
 
 set_call() {
-    echo "SEQUENTIAL" > $TMPDIR/data_call.csv
-    echo "$USERNAME;$RUSER" >> $TMPDIR/data_call.csv
+    echo "SEQUENTIAL" > $TMP_DIR/data_call.csv
+    echo "$USERNAME;$RUSER" >> $TMP_DIR/data_call.csv
 }
 
 
 set_register_uac() {
-    $SPATH/set_uac_register -d $TMPDIR $USERNAME $PASSWORD 
+    $SCRIPTS_DIR/set_uac_register -d $TMP_DIR $USERNAME $PASSWORD 
 }
 
 set_register_uas() {
     [ $1 == "1" ] && MOPT="-m 1"
-    $SPATH/set_uas_register -d $TMPDIR $PASSWORD 
+    $SCRIPTS_DIR/set_uas_register -d $TMP_DIR $PASSWORD 
 }
 
 
 
 register_uac() {
-    CMD="$SIPP_SSL -i $LADDR  -p $LPORT -m 1 -inf $TMPDIR/data_reg.csv $EM_ADDR \
-        -sf $SCENARIOS/uac_register.sf \
+    CMD="$SIPP -i $LADDR  -p $LPORT -m 1 -inf $TMP_DIR/data_reg.csv $SIPSRVR \
+        -sf $SCENARIO_DIR/uac_register.sf \
         -t $TRANSPORT $SIPP_OPT"
 
     if [ $SHOWCMD -ne 1 ]; then
@@ -141,8 +127,8 @@ register_uac() {
 
 
 register_uas() {
-    CMD="$SIPP_SSL -i $LADDR  -p $LPORT $MOPT -inf $TMPDIR/data_registrar.csv \
-        -sf $SCENARIOS/uas_register.sf \
+    CMD="$SIPP -i $LADDR  -p $LPORT $MOPT -inf $TMP_DIR/data_registrar.csv \
+        -sf $SCENARIO_DIR/uas_register.sf \
         -t $TRANSPORT $SIPP_OPT" 
 
     if [ $SHOWCMD -ne 1 ]; then
@@ -162,7 +148,7 @@ settransport() {
     case $1 in 
         "tcp") TRANSPORT=t1;;
         "udp") TRANSPORT=u1;;
-        "tls") TRANSPORT="l1 -tls_cert $SCENARIOS/cacert.pem -tls_key $SCENARIOS/cakey.pem";;
+        "tls") TRANSPORT="l1 -tls_cert $SCENARIO_DIR/cacert.pem -tls_key $SCENARIO_DIR/cakey.pem";;
     esac
 }
 
@@ -182,9 +168,8 @@ do
         m) MODE=$OPTARG;;
         i) LADDR=$OPTARG;;
         p) LPORT=$OPTARG;;
-        d) EM_ADDR=$OPTARG;;
+        d) SIPSRVR=$OPTARG;;
         t) settransport $OPTARG;;
-        r) REGISTER=$OPTARG;;
         a) AUDIO=$OPTARG;;
         o) SIPP_OPT=$OPTARG;;
         c) SHOWCMD=1;;
@@ -197,17 +182,6 @@ done
 
 verify_options
 
-#if [ "$REGISTER" == "send" ];then
-#    set_register_uac
-#    register_uac
-#elif [ "$REGISTER" == "recv" ];then
-#    set_register_uas 1
-#    register_uas
-#fi
-#
-
-RTPECHO=""
-UACSF="uac.sf"
 
 case "$MODE" in
     uac)
@@ -215,10 +189,8 @@ case "$MODE" in
         sleep 1
         if [[ "$AUDIO" == "send" ]]; then 
             UACSF="uac_pcap_play.sf"
-            echo "UACSF set to $UACSF"
         elif [[ "$AUDIO" == "recv" ]]; then  
             RTPECHO="-rtp_echo -d 8000"
-            echo "RTPECHO set to $RTPECHO"
         fi
         start_uac
         ;;
