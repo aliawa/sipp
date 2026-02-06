@@ -13,9 +13,9 @@ class rtpThread (threading.Thread):
         self.name = name
         self.server = SocketServer.UDPServer(addr, RTPReceiver)
     def run(self):
-        print "Starting " + self.name
+        print ("Starting " + self.name)
         self.server.serve_forever()
-        print "Exiting " + self.name
+        print ("Exiting " + self.name)
 
     def stop(self):
         self.server.shutdown()
@@ -28,10 +28,10 @@ class controllerThread (threading.Thread):
         self.name = name
         self.server = ControlServer(addr)
     def run(self):
-        print "Starting " + self.name
+        print ("Starting " + self.name)
 
         self.server.listen()
-        print "Exiting " + self.name
+        print ("Exiting " + self.name)
 
     def stop(self):
         self.server.shutdown()
@@ -42,10 +42,8 @@ class RTPReceiver(SocketServer.BaseRequestHandler):
     def handle(self):
         data = self.request[0].strip()
         socket = self.request[1]
-        print "{} wrote:".format(self.client_address[0])
-        print data
-
-
+        print ("{} wrote:".format(self.client_address[0]))
+        print (data)
 
 
 class ControlServer:
@@ -56,13 +54,13 @@ class ControlServer:
 
 
     def listen(self):
-        print 'Opening Control socket'
+        print ('Opening Control socket')
         self.s.listen(1)
         conn, addr = self.s.accept()
-        print 'Connection address:', addr
+        print ('Connection address:', addr)
         while 1:
             data = conn.recv(1024)
-            print "received data:", data
+            print ("received data:", data)
             if data.find("start") != -1:
                 pos = data.find("start")
                 ip, port = data[pos+6:].split(" ",2)
@@ -73,7 +71,7 @@ class ControlServer:
                 break
 
     def startRtp(self, ip, port):
-        print "starting rtp-listner on {}:{}".format(ip,port)
+        print ("starting rtp-listner on {}:{}".format(ip,port))
         self.rtpListner = rtpThread(1, "rtp-listner", (ip,port))
         self.rtpListner.start()
 
@@ -96,4 +94,4 @@ if __name__ == "__main__":
     controlThrd = controllerThread(1, "control-listner", (args[0], int(args[1])) )
     controlThrd.start()
 
-    print "Exiting Main Thread"
+    print ("Exiting Main Thread")

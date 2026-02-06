@@ -1,12 +1,18 @@
 #!/bin/bash
 
+
+
 # Constants
-SIPPDIR="$HOME/workspace/sipp"
+#SIPPDIR="$HOME/workspace/sipp"
+SIPPDIR="/home/aawais/workspace/sipp"
 SPATH="$SIPPDIR/scripts"
 SCENARIOS="$SIPPDIR/scenario"
-SIPP=$SIPPDIR/sipp_ssl
-SIPP_SSL=$SIPPDIR/sipp_ssl
-TMPDIR=$HOME/tmp
+#SIPP=$SIPPDIR/sipp_ssl
+SIPP=sipp
+#SIPP_SSL=$SIPPDIR/sipp_ssl
+SIPP_SSL=sipp
+TMPDIR=/home/aawais/tmp
+#TMPDIR=$HOME/tmp
 
 # Configured
 USERNAME="1024"
@@ -26,21 +32,22 @@ SHOWCMD=0
 # Internal
 SIPP_OPT=""
 UACSF="uac.sf"
+UASSF="uas.sf"
 MOPT=""
 
 usage()
 {
     echo 
     echo "Usage as UAS:"
-    echo "  $(basename $0) -m uas|reg -i <local-ip> [options]"
+    echo "  $(basename $0) -m uas|uas_reg -i <local-ip> [options]"
     echo "Usage as UAC:"
-    echo "  $(basename $0) -m uac -i <local-ip> -d <remote-ip[:port]> [options]"
+    echo "  $(basename $0) -m uac|uac_reg -i <local-ip> -d <remote-ip[:port]> [options]"
     echo
     echo "OPTIONS:"
     echo "  -p <local-port>       default: $LPORT"
-    echo "  -r <recv|send>        send/receive REGISTER  default:neither" 
+    # echo "  -r <recv|send>        send/receive REGISTER  default:neither" 
     echo "  -t <tcp|udp|tls>      default: udp"
-    echo "  -a                    send/echo rtp"
+    echo "  -a <send/recv>        send/echo rtp"
     echo "  -o <sipp option>      sipp option in quotes"
     echo "  -c                    Show command"
     echo
@@ -82,7 +89,7 @@ start_uas() {
     CMD="$SIPP -i $LADDR -p $LPORT \
         -t $TRANSPORT $RTP \
         $SIPP_OPT \
-        -sf $SCENARIOS/uas.sf \
+        -sf $SCENARIOS/$UASSF \
         $RTPECHO"
     [ $SHOWCMD -eq 1 ] && echo $CMD || $CMD
 }
@@ -90,7 +97,9 @@ start_uas() {
 start_uac() {
     CMD="$SIPP -i $LADDR -p $LPORT -d 2000 -m 1 -r 17 -inf $TMPDIR/data_call.csv \
         -t $TRANSPORT \
-        -sf $SCENARIOS/$UACSF $SIPP_OPT \
+        -sf $SCENARIOS/$UACSF \
+        $RTPECHO \
+        $SIPP_OPT \
         $EM_ADDR"
     [ $SHOWCMD -eq 1 ] && echo $CMD || $CMD
 }
@@ -165,7 +174,7 @@ settransport() {
 # -------------------------------------
 
 # Process options
-while getopts hr:m:u:i:p:d:t:aoc? option
+while getopts hr:m:u:i:p:d:t:a:oc? option
 do
     case "$option" in
         u) USERNAME=$OPTARG
@@ -176,7 +185,7 @@ do
         d) EM_ADDR=$OPTARG;;
         t) settransport $OPTARG;;
         r) REGISTER=$OPTARG;;
-        a) RTPECHO="-rtp_echo"; UACSF="uac_pcap_play.sf" ;;
+        a) AUDIO=$OPTARG;;
         o) SIPP_OPT=$OPTARG;;
         c) SHOWCMD=1;;
         h) usage; exit;;
@@ -188,26 +197,48 @@ done
 
 verify_options
 
-if [ "$REGISTER" == "send" ];then
-    set_register_uac
-    register_uac
-elif [ "$REGISTER" == "recv" ];then
-    set_register_uas 1
-    register_uas
-fi
+#if [ "$REGISTER" == "send" ];then
+#    set_register_uac
+#    register_uac
+#elif [ "$REGISTER" == "recv" ];then
+#    set_register_uas 1
+#    register_uas
+#fi
+#
 
+RTPECHO=""
+UACSF="uac.sf"
 
-
-if [[ "$MODE" == "uac" ]]; then
-    set_call
-    sleep 1
-    start_uac
-elif [[ "$MODE" == "uas" ]]; then
-    start_uas
-elif [[ "$MODE" == "reg" ]]; then
-    set_register_uas
-    register_uas
-fi
+case "$MODE" in
+    uac)
+        set_call
+        sleep 1
+        if [[ "$AUDIO" == "send" ]]; then 
+            UACSF="uac_pcap_play.sf"
+            echo "UACSF set to $UACSF"
+        elif [[ "$AUDIO" == "recv" ]]; then  
+            RTPECHO="-rtp_echo -d 8000"
+            echo "RTPECHO set to $RTPECHO"
+        fi
+        start_uac
+        ;;
+    uas)
+        if [[ "$AUDIO" == "send" ]]; then 
+            UASSF="uas_pcap_play.sf"
+        elif [[ "$AUDIO" == "recv" ]]; then  
+            RTPECHO="-rtp_echo"
+        fi
+        start_uas
+        ;;
+    uas_reg)
+        set_register_uas
+        register_uas
+        ;;
+    uac_reg)
+        set_register_uac
+        register_uac
+        ;;
+esac
 
 
 
